@@ -1,0 +1,101 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: "Montserrat", system-ui, Arial, sans-serif;
+}
+
+/* page frame */
+.login-root {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;         /* centers the card */
+  overflow: hidden;
+  background: #000;            /* fallback */
+}
+
+/* background image + subtle overlay for readability */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  background: url('/files/Login.jpg') center/cover no-repeat;
+  filter: brightness(.78);
+}
+.login-bg::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(1200px 600px at 65% 55%, rgba(0,170,255,.25), transparent 60%),
+              linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,.55));
+}
+
+/* centered card */
+.login-card {
+  position: relative; z-index: 1;
+  width: min(420px, 92vw);
+  padding: 22px 22px 18px;
+  color: #fff; text-align: center;
+  background: rgba(10, 30, 45, .55);
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(0,0,0,.45);
+  backdrop-filter: blur(4px); /* nice glassy look */
+}
+
+/* brand row */
+.brand {
+  display: inline-flex; align-items: baseline; gap: 10px;
+  user-select: none;
+}
+.flask { font-size: 30px; line-height: 1; color: #ff3b30; }
+.brand-yellow { color: #ffea00; font-weight: 900; font-size: 38px; letter-spacing: 1px; }
+.brand-white  { color: #fff;     font-weight: 900; font-size: 20px; letter-spacing: 6px; margin-left: -4px; }
+
+/* yellow + red underline */
+.brand-underline {
+  height: 6px; width: 70%; margin: 10px auto 18px;
+  background: linear-gradient(#ffea00 0 0), linear-gradient(#f64e60 0 0);
+  background-size: 100% 3px, 100% 3px;
+  background-position: top, bottom;
+  background-repeat: no-repeat;
+  border-radius: 3px;
+}
+
+/* form */
+.form { margin-top: 2px; }
+.form-group { margin: 12px 0; }
+
+/* pill inputs */
+.input-pill {
+  width: 100%; height: 44px;
+  border-radius: 999px; border: 1.5px solid transparent;
+  background: #fff; color: #111; font-weight: 700;
+  padding: 0 16px; outline: none;
+  box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.input-pill::placeholder { color: #b5b5b5; font-weight: 700; }
+.input-pill:focus {
+  border-color: #ffea00;
+  box-shadow: 0 8px 20px rgba(0,0,0,.45), 0 0 0 3px rgba(255,234,0,.25);
+}
+
+/* button */
+.btn-row { margin-top: 16px; }
+.btn-primary {
+  display: inline-block;
+  width: 150px; height: 40px;
+  border-radius: 999px; border: 0;
+  background: #fff; color: #000; font-weight: 900; cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+  transition: transform .06s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.btn-primary[disabled] { opacity: .65; cursor: not-allowed; }
+.btn-primary:not([disabled]):hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(0,0,0,.45); }
+
+/* error */
+.error-txt { color: #f64e60; margin-top: 10px; font-weight: 700; }
+
+/* responsive */
+@media (max-width: 480px) {
+  .brand-yellow { font-size: 32px; }
+  .brand-white  { font-size: 18px; letter-spacing: 4px; }
+  .brand-underline { width: 78%; }
+}

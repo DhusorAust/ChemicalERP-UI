@@ -1,0 +1,28 @@
+<div class="login-page">
+  <div class="login-root">
+    <div class="login-bg"></div>
+    <div class="login-card">
+      <div class="brand">
+        <span class="flask">🧪</span>
+        <span class="brand-yellow">CHEMICAL</span>
+        <span class="brand-white">ERP</span>
+      </div>
+      <div class="brand-underline"></div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+        <div class="form-group">
+          <input class="input-pill" placeholder="User Name" formControlName="UserName" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <input type="password" class="input-pill" placeholder="Password" formControlName="PasswordH" autocomplete="current-password">
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" type="submit" [disabled]="loading || form.invalid">
+            {{ loading ? 'Processing…' : 'Sign In' }}
+          </button>
+        </div>
+        <p *ngIf="error" class="error-txt">{{ error }}</p>
+      </form>
+    </div>
+  </div>
+</div>

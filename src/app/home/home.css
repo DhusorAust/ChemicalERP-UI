@@ -1,0 +1,14 @@
+/* src/app/home/home.css */
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:#05252a;color:#fff;padding:16px 10px}
+.brand{font-weight:900;letter-spacing:.5px;margin:8px 8px 18px}
+.brand span{opacity:.8;font-weight:800}
+.menu{list-style:none;margin:0;padding:0}
+.menu-item{margin:6px 0}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer}
+.row:hover{background:#08333a}
+.row a,.row span{color:#eaf8fb;text-decoration:none;font-weight:600}
+a.active{color:#9df;text-decoration:underline}
+.chev{background:transparent;color:#9bd;border:0;cursor:pointer}
+.submenu{list-style:none;margin:6px 0 6px 10px;padding-left:10px;border-left:2px solid #0b3f45}
+.content{background:#fff;padding:16px}

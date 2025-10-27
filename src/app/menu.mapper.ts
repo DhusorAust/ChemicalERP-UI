@@ -1,45 +1,37 @@
-// src/app/menu.mapper.ts
-import { MenuRow, MenuNode } from './menu.types';
+import { MenuNode, MenuRow } from './menu.types';
 
-function buildRoute(r: MenuRow): string | null {
-  // folder (no route) if Controller/ViewName are empty
-  if (!r.Controller || !r.ViewName) return null;
-
-  // Choose a scheme. Example: /{Controller}/{ViewName}[?p=ParameterValue]
-  return r.ParameterValue
-    ? `/${r.Controller}/${r.ViewName}?p=${encodeURIComponent(r.ParameterValue)}`
-    : `/${r.Controller}/${r.ViewName}`;
+function toRoute(r: MenuRow): string | undefined {
+  if (r.PageName) return r.PageName.startsWith('/') ? r.PageName : '/' + r.PageName;
+  if (r.Controller && r.ViewName)
+    return `/${String(r.Controller).toLowerCase()}/${String(r.ViewName).toLowerCase()}`;
+  return undefined;
 }
 
 export function rowsToTree(rows: MenuRow[]): MenuNode[] {
-  // keep only active/allowed rows; sort by MenuPriority
-  const filtered = rows
-    .filter(r => r.IsPermission === 1)
-    .sort((a, b) => a.MenuPriority - b.MenuPriority);
+  const list = (rows ?? [])
+    .filter(r => (r.IsActive ?? 1) ? true : false)
+    .sort((a, b) => (a.MenuPriority ?? 0) - (b.MenuPriority ?? 0));
 
-  // create a map of MenuID -> node
-  const map = new Map<number, MenuNode>();
-  filtered.forEach(r => {
-    map.set(r.MenuID, {
+  const byId = new Map<number, MenuNode>();
+  const roots: MenuNode[] = [];
+
+  for (const r of list) {
+    byId.set(r.MenuID, {
       id: r.MenuID,
-      title: r.MenuTitle || r.PageName || r.MenuHead || `Menu ${r.MenuID}`,
+      title: r.MenuHead || r.PageName || r.ViewName || `Menu ${r.MenuID}`,
       icon: r.MenuIcon || undefined,
-      route: buildRoute(r),
+      route: toRoute(r),
+      order: r.MenuPriority ?? 0,
       children: []
     });
-  });
+  }
 
-  // attach children to parents
-  const roots: MenuNode[] = [];
-  filtered.forEach(r => {
-    const node = map.get(r.MenuID)!;
-    const pid = Number(r.ParentMenuID) || 0;
-    if (pid === 0 || !map.has(pid)) {
-      roots.push(node);
-    } else {
-      map.get(pid)!.children!.push(node);
-    }
-  });
+  for (const r of list) {
+    const node = byId.get(r.MenuID)!;
+    const pid = r.ParentMenuID ?? 0;
+    if (pid && byId.has(pid)) byId.get(pid)!.children!.push(node);
+    else roots.push(node);
+  }
 
   return roots;
 }

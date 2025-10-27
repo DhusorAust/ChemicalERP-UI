@@ -2,53 +2,49 @@
   <aside class="sidebar">
     <div class="brand">CHEMICAL <span>ERP</span></div>
 
-    <!-- 🔎 DEBUG PANEL -->
-    <div class="debug" *ngIf="true" style="font-size:12px;margin:8px 0;color:#9bd">
-      Raw: {{ raw()?.length || 0 }} | Tree: {{ tree().length }}
-      <details style="margin-top:4px">
-        <summary>First 2 raw rows</summary>
-        <pre style="white-space:pre-wrap;background:#08333a;padding:6px;border-radius:6px">
-{{ (raw() || []).slice(0,2) | json }}
-        </pre>
-      </details>
-      <details *ngIf="tree().length">
-        <summary>First 2 tree nodes</summary>
-        <pre style="white-space:pre-wrap;background:#08333a;padding:6px;border-radius:6px">
-{{ tree().slice(0,2) | json }}
-        </pre>
-      </details>
-    </div>
-
-    <!-- If tree empty but raw has rows, show a simple flat list to prove data is there -->
-    <ul *ngIf="!tree().length && raw()?.length" class="menu">
-      <li *ngFor="let r of raw()!">{{ r.MenuTitle }} ({{ r.Controller }}/{{ r.ViewName }})</li>
-    </ul>
-
-    <!-- Normal nested menu -->
-    <ul class="menu" *ngIf="tree().length">
+    <ul class="menu" *ngIf="tree().length; else empty">
       <ng-container *ngFor="let m of tree()">
         <li class="menu-item" [class.open]="isOpen(m.id)">
-          <div class="row" (click)="m.children?.length ? toggle(m.id) : null">
+          <div class="row" (click)="m.children.length ? toggle(m.id) : null">
             <i *ngIf="m.icon" [class]="m.icon"></i>
-            <a *ngIf="m.route; else folder" [routerLink]="m.route" routerLinkActive="active">{{ m.title }}</a>
-            <ng-template #folder><span>{{ m.title }}</span></ng-template>
-            <button *ngIf="m.children?.length" class="chev" type="button" (click)="toggle(m.id)">▸</button>
+
+            <!-- leaf -->
+            <a *ngIf="m.href; else folder"
+               [attr.href]="m.href"
+               [class.menu-link-active]="isActive(m.href)">{{ m.title }}</a>
+
+            <!-- folder -->
+            <ng-template #folder>
+              <span class="folder">{{ m.title }}</span>
+            </ng-template>
+
+            <button *ngIf="m.children.length" class="chev" type="button" (click)="toggle(m.id)">▸</button>
           </div>
 
-          <ul class="submenu" *ngIf="m.children?.length && isOpen(m.id)">
+          <!-- level 2 -->
+          <ul class="submenu" *ngIf="m.children.length && isOpen(m.id)">
             <ng-container *ngFor="let c of m.children">
               <li class="menu-item" [class.open]="isOpen(c.id)">
-                <div class="row" (click)="c.children?.length ? toggle(c.id) : null">
+                <div class="row" (click)="c.children.length ? toggle(c.id) : null">
                   <i *ngIf="c.icon" [class]="c.icon"></i>
-                  <a *ngIf="c.route; else folder2" [routerLink]="c.route" routerLinkActive="active">{{ c.title }}</a>
-                  <ng-template #folder2><span>{{ c.title }}</span></ng-template>
-                  <button *ngIf="c.children?.length" class="chev" type="button" (click)="toggle(c.id)">▸</button>
+
+                  <a *ngIf="c.href; else folder2"
+                     [attr.href]="c.href"
+                     [class.menu-link-active]="isActive(c.href)">{{ c.title }}</a>
+                  <ng-template #folder2>
+                    <span class="folder">{{ c.title }}</span>
+                  </ng-template>
+
+                  <button *ngIf="c.children.length" class="chev" type="button" (click)="toggle(c.id)">▸</button>
                 </div>
 
-                <ul class="submenu" *ngIf="c.children?.length && isOpen(c.id)">
+                <!-- level 3 -->
+                <ul class="submenu" *ngIf="c.children.length && isOpen(c.id)">
                   <li *ngFor="let g of c.children">
-                    <a *ngIf="g.route; else plain" [routerLink]="g.route" routerLinkActive="active">{{ g.title }}</a>
-                    <ng-template #plain><span>{{ g.title }}</span></ng-template>
+                    <a *ngIf="g.href; else plain"
+                       [attr.href]="g.href"
+                       [class.menu-link-active]="isActive(g.href)">{{ g.title }}</a>
+                    <ng-template #plain><span class="folder">{{ g.title }}</span></ng-template>
                   </li>
                 </ul>
               </li>
@@ -58,11 +54,13 @@
       </ng-container>
     </ul>
 
-    <div *ngIf="error()" class="debug" style="color:#f99">{{ error() }}</div>
+    <ng-template #empty>
+      <div *ngIf="!error(); else err" style="opacity:.7">No menu found.</div>
+      <ng-template #err><div style="color:#f99">{{ error() }}</div></ng-template>
+    </ng-template>
   </aside>
 
   <main class="content">
-    <!-- keep or remove this outlet depending on your route setup -->
     <router-outlet></router-outlet>
   </main>
 </div>

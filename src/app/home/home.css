@@ -12,3 +12,13 @@ a.active{color:#9df;text-decoration:underline}
 .chev{background:transparent;color:#9bd;border:0;cursor:pointer}
 .submenu{list-style:none;margin:6px 0 6px 10px;padding-left:10px;border-left:2px solid #0b3f45}
 .content{background:#fff;padding:16px}
+/* --- left-align child labels, keep design intact --- */
+.row{ justify-content: flex-start; }     /* text on the left */
+.chev{ margin-left: auto;                /* caret stays at far right */
+       appearance: none; -webkit-appearance: none; -moz-appearance: none; }
+
+/* make sure bullets never appear */
+.menu, .submenu{ list-style: none; }
+
+/* optional: start children a touch closer to the left but keep the guide line */
+.submenu{ margin-left: 0; padding-left: 12px; border-left: 2px solid #0b3f45; }

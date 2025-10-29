@@ -1,37 +1,30 @@
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { isPlatformBrowser } from '@angular/common';
-import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
+import { BehaviorSubject, catchError, map, of, tap } from 'rxjs';
 import { MenuRow, MenuNode } from './menu.types';
 import { rowsToTree } from './menu.mapper';
 
-const API_URL = 'http://localhost:56172/api/login/GetMenuLoad';
+// If you use environments:
+// import { environment } from '../environments/environment';
+// const API = `${environment.apiBase}/api/login/GetMenuLoad`;
+const API = 'http://localhost:56172/api/login/GetMenuLoad';
 
 @Injectable({ providedIn: 'root' })
 export class MenuService {
   private http = inject(HttpClient);
-  private platformId = inject(PLATFORM_ID);
-
   private tree$ = new BehaviorSubject<MenuNode[]>([]);
+  private loaded = false;
 
-  /** Call once after login (browser only). */
-  load(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+  load() {
+    if (this.loaded) return;
+    this.loaded = true;
 
-    this.http.get<MenuRow[]>(API_URL, { withCredentials: true })
-      .pipe(
-        catchError(err => {
-          console.error('Menu API error', err);
-          return of<MenuRow[]>([]);
-        }),
-        map(rows => rowsToTree(rows)),
-        tap(tree => this.tree$.next(tree))
-      )
-      .subscribe();
+    this.http.get<MenuRow[]>(API, { withCredentials: true }).pipe(
+      catchError(err => { console.error('Menu API error', err); return of<MenuRow[]>([]); }),
+      map(rows => rowsToTree(rows)),
+      tap(tree => this.tree$.next(tree))
+    ).subscribe();
   }
 
-  /** Subscribe to sidebar tree */
-  getMenuTree(): Observable<MenuNode[]> {
-    return this.tree$.asObservable();
-  }
+  getMenuTree() { return this.tree$.asObservable(); }
 }

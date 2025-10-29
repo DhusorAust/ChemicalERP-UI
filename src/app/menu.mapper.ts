@@ -1,26 +1,42 @@
 import { MenuNode, MenuRow } from './menu.types';
 
-function toRoute(r: MenuRow): string | undefined {
-  if (r.PageName) return r.PageName.startsWith('/') ? r.PageName : '/' + r.PageName;
-  if (r.Controller && r.ViewName)
-    return `/${String(r.Controller).toLowerCase()}/${String(r.ViewName).toLowerCase()}`;
-  return undefined;
+const clean = (s?: string | null) => (s ?? '').trim();
+const isExternal = (p: string) => /^(https?:)?\/\//i.test(p);
+
+// "Setting/Bank" or "/Setting/Bank?x=1" → "/setting/bank"
+function normalizePath(p: string) {
+  const core = p.split(/[?#]/)[0];                   // strip query/hash
+  const withSlash = core.startsWith('/') ? core : '/' + core;
+  return withSlash.replace(/\/+$/, '').toLowerCase();
+}
+
+function toRoute(r: MenuRow): { route?: string; url?: string } {
+  const page = clean(r.PageName);
+  if (page) {
+    if (isExternal(page)) return { url: page };       // absolute link
+    return { route: normalizePath(page) };
+  }
+  // fallback: /controller/view
+  const c = clean(r.Controller), v = clean(r.ViewName);
+  if (c && v) return { route: normalizePath(`/${c}/${v}`) };
+  return {};
 }
 
 export function rowsToTree(rows: MenuRow[]): MenuNode[] {
   const list = (rows ?? [])
     .filter(r => (r.IsActive ?? 1) ? true : false)
-    .sort((a, b) => (a.MenuPriority ?? 0) - (b.MenuPriority ?? 0));
+    .sort((a,b) => (a.MenuPriority ?? 0) - (b.MenuPriority ?? 0));
 
   const byId = new Map<number, MenuNode>();
   const roots: MenuNode[] = [];
 
   for (const r of list) {
+    const { route, url } = toRoute(r);
     byId.set(r.MenuID, {
       id: r.MenuID,
-      title: r.MenuHead || r.PageName || r.ViewName || `Menu ${r.MenuID}`,
-      icon: r.MenuIcon || undefined,
-      route: toRoute(r),
+      title: clean(r.MenuHead) || clean(r.PageName) || clean(r.ViewName) || `Menu ${r.MenuID}`,
+      icon: clean(r.MenuIcon) || undefined,
+      route, url,
       order: r.MenuPriority ?? 0,
       children: []
     });

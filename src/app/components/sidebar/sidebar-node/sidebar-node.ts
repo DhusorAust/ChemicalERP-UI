@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { MenuNode } from '../../../menu.types'; // ← 3 levels up to app/menu.types
+import { MenuNode } from '../../../menu.types';
 
 type Expander = { value: Set<number>; set: (s: Set<number>) => void; };
 
@@ -25,7 +25,7 @@ type Expander = { value: Set<number>; set: (s: Set<number>) => void; };
   <li class="menu-item" [class.menu-item-submenu]="node.children?.length" [class.open]="isOpen">
     <a class="menu-link"
        [routerLink]="node.route || null"
-       [attr.href]="node.route ? null : (node.url || null)"
+       [attr.href]="!node.route ? (node.url || null) : null"
        routerLinkActive="menu-link-active"
        (click)="toggleIfFolder($event)">
       <span class="menu-icon" *ngIf="node.icon"><i [class]="node.icon"></i></span>

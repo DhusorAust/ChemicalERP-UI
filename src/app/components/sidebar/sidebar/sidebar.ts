@@ -1,10 +1,11 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { MenuNode } from '../../../menu.types'; // ← 3 levels up to app/menu.types
+import { MenuNode } from '../../../menu.types';
+import { MenuService } from '../../../menu.service';
 import { SidebarNodeComponent } from '../sidebar-node/sidebar-node';
- 
+
 @Component({
   standalone: true,
   selector: 'app-sidebar',
@@ -26,33 +27,39 @@ import { SidebarNodeComponent } from '../sidebar-node/sidebar-node';
   `
 })
 export class SidebarComponent implements OnInit {
-  @Input() nodes: MenuNode[] = [];
+  private menu = inject(MenuService);
+  private router = inject(Router);
+
+  nodes: MenuNode[] = [];
 
   expanded = {
     value: new Set<number>(),
     set: (s: Set<number>) => this.expanded.value = s
   };
 
-  constructor(private router: Router) {}
-
   ngOnInit() {
-    const apply = (url: string) => {
-      const urlL = url.toLowerCase();
-      const set = new Set<number>();
-      const walk = (n: MenuNode, chain: number[]): boolean => {
-        const r = (n.route ?? '').toLowerCase();
-        const selfActive = !!r && (urlL === r || urlL.startsWith(r + '?') || urlL.startsWith(r + '/'));
-        let childActive = false;
-        for (const c of (n.children ?? [])) childActive = walk(c, [...chain, Number(n.id)]) || childActive;
-        if (selfActive || childActive) chain.forEach(id => set.add(id));
-        return selfActive || childActive;
-      };
-      for (const n of this.nodes) walk(n, []);
-      this.expanded.set(set);
-    };
+    this.menu.load();
+    this.menu.getMenuTree().subscribe(tree => {
+      this.nodes = tree;
+      this.expandForUrl(this.router.url);
+    });
 
-    apply(this.router.url);
     this.router.events.pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe((e: any) => apply(e.urlAfterRedirects));
+      .subscribe((e: any) => this.expandForUrl(e.urlAfterRedirects));
+  }
+
+  private expandForUrl(url: string) {
+    const urlL = (url || '').toLowerCase();
+    const set = new Set<number>();
+    const walk = (n: MenuNode, chain: number[]): boolean => {
+      const r = (n.route ?? '').toLowerCase();
+      const selfActive = !!r && (urlL === r || urlL.startsWith(r + '/') || urlL.startsWith(r + '?'));
+      let childActive = false;
+      for (const c of (n.children ?? [])) childActive = walk(c, [...chain, Number(n.id)]) || childActive;
+      if (selfActive || childActive) chain.forEach(id => set.add(id));
+      return selfActive || childActive;
+    };
+    for (const n of (this.nodes ?? [])) walk(n, []);
+    this.expanded.set(set);
   }
 }

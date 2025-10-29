@@ -3,8 +3,9 @@
   <div class="card card-head">
     <div class="card-header">
       <h2 class="title">Bank</h2>
-      <div class="head-right">
-        <input class="form-control" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="onSearchEnter()">
+
+      <div class="head-right" *ngIf="mode==='list'">
+        <input class="form-control" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="onSearchEnter()" name="searchBox">
         <div class="btn-group">
           <button type="button" class="btn btn-outline"
                   [class.btn-primary]="status==='ALL'" (click)="setStatus('ALL')">All</button>
@@ -14,15 +15,23 @@
                   [class.btn-primary]="status==='APPROVED'" (click)="setStatus('APPROVED')">Approved</button>
         </div>
         <button type="button" class="btn btn-outline" (click)="refresh()">Refresh</button>
+        <button type="button" class="btn btn-primary" (click)="openNew()">New</button>
+      </div>
+
+      <div class="head-right" *ngIf="mode==='form'">
+        <button type="button" class="btn btn-outline" (click)="backToList()">← Back to list</button>
       </div>
     </div>
   </div>
 
-  <!-- Grid -->
-  <div class="card">
+  <!-- Alerts -->
+  <div *ngIf="success && mode==='list'" class="alert info" style="margin-top:12px">{{ success }}</div>
+  <div *ngIf="error" class="alert danger" style="margin-top:12px">{{ error }}</div>
+
+  <!-- LIST (Grid) -->
+  <div class="card" *ngIf="mode==='list'">
     <div class="card-body">
       <div *ngIf="loading" class="alert info">Loading...</div>
-      <div *ngIf="error" class="alert danger">{{ error }}</div>
 
       <div class="table-responsive">
         <table class="table">
@@ -73,6 +82,58 @@
       <div class="card-footer">
         <div class="text-muted">Total: {{ total }}</div>
       </div>
+    </div>
+  </div>
+
+  <!-- FORM (Create) -->
+  <div class="card" *ngIf="mode==='form'">
+    <div class="card-body">
+      <form (ngSubmit)="submit()">
+        <div class="form-grid">
+          <label>
+            <div>Bank Name <span class="req">*</span></div>
+            <input class="form-control" name="BankName" [(ngModel)]="form.BankName" required />
+          </label>
+
+          <label>
+            <div>Short Name</div>
+            <input class="form-control" name="BankShortName" [(ngModel)]="form.BankShortName" />
+          </label>
+
+          <label>
+            <div>SWIFT</div>
+            <input class="form-control" name="SwiftCode" [(ngModel)]="form.SwiftCode" />
+          </label>
+
+          <label class="col-span-2">
+            <div>Address</div>
+            <input class="form-control" name="BankAddress" [(ngModel)]="form.BankAddress" />
+          </label>
+
+          <label>
+            <div>Active</div>
+            <select class="form-control" name="IsActive" [(ngModel)]="form.IsActive">
+              <option [ngValue]="1">Yes</option>
+              <option [ngValue]="0">No</option>
+            </select>
+          </label>
+
+          <label>
+            <div>Approved</div>
+            <select class="form-control" name="Approved" [(ngModel)]="form.Approved">
+              <option [ngValue]="1">Yes</option>
+              <option [ngValue]="0">No</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="card-footer" style="justify-content:space-between">
+          <button type="button" class="btn" (click)="backToList()">← Back to list</button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving">
+            {{ saving ? 'Saving…' : 'Save' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

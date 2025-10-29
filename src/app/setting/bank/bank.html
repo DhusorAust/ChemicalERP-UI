@@ -1,103 +1,75 @@
 <div class="bank-wrap">
+  <!-- Header -->
   <div class="card card-head">
     <div class="card-header">
-      <div class="head-left">
-        <button type="button" class="btn btn-light" (click)="backToList()" *ngIf="mode==='form'">← Back</button>
-        <h2 class="title">Bank</h2>
-      </div>
-      <div class="head-right" *ngIf="mode==='list'">
-        <button class="btn btn-primary" (click)="openNew()">+ Add New</button>
+      <h2 class="title">Bank</h2>
+      <div class="head-right">
+        <input class="form-control" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="onSearchEnter()">
+        <div class="btn-group">
+          <button class="btn btn-outline" [class.btn-primary]="status==='ALL'" (click)="setStatus('ALL')">All</button>
+          <button class="btn btn-outline" [class.btn-primary]="status==='EDIT'" (click)="setStatus('EDIT')">Edit</button>
+          <button class="btn btn-outline" [class.btn-primary]="status==='APPROVED'" (click)="setStatus('APPROVED')">Approved</button>
+        </div>
+        <button class="btn btn-outline" (click)="refresh()">Refresh</button>
       </div>
     </div>
   </div>
 
-  <!-- LIST -->
-  <div class="card" *ngIf="mode==='list'">
+  <!-- Grid -->
+  <div class="card">
     <div class="card-body">
       <div *ngIf="loading" class="alert info">Loading...</div>
       <div *ngIf="error" class="alert danger">{{ error }}</div>
 
-      <div class="table-responsive" *ngIf="!loading && rows.length">
+      <div class="table-responsive" *ngIf="!loading">
         <table class="table">
           <thead>
             <tr>
-              <th style="width:110px">Action</th>
-              <th>Bank Name</th>
-              <th>Short</th>
-              <th>Swift</th>
-              <th>Active</th>
+              <th (click)="toggleSort('BankID')" style="width:90px;cursor:pointer">
+                ID <span *ngIf="sortField==='BankID'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="toggleSort('BankName')" style="cursor:pointer">
+                Bank Name <span *ngIf="sortField==='BankName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="toggleSort('BankShortName')" style="cursor:pointer">
+                Short <span *ngIf="sortField==='BankShortName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="toggleSort('SwiftCode')" style="cursor:pointer">
+                Swift <span *ngIf="sortField==='SwiftCode'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="toggleSort('BankAddress')" style="cursor:pointer">
+                Address <span *ngIf="sortField==='BankAddress'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="toggleSort('IsActive')" style="width:90px;cursor:pointer">
+                Active <span *ngIf="sortField==='IsActive'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="toggleSort('Approved')" style="width:110px;cursor:pointer">
+                Approved <span *ngIf="sortField==='Approved'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+              </th>
             </tr>
           </thead>
+
           <tbody>
-            <tr *ngFor="let r of rows; trackBy: trackById">
-              <td><button class="btn btn-outline" (click)="openEdit(r)">Edit</button></td>
+            <tr *ngFor="let r of items">
+              <td>{{ r.BankID }}</td>
               <td class="text-strong">{{ r.BankName }}</td>
               <td>{{ r.BankShortName || '—' }}</td>
               <td>{{ r.SwiftCode || '—' }}</td>
-              <td>
-                <span class="badge" [class.badge-success]="r.IsActive" [class.badge-muted]="!r.IsActive">
-                  {{ (r.IsActive?1:0) ? 'Yes' : 'No' }}
-                </span>
-              </td>
+              <td>{{ r.BankAddress || '—' }}</td>
+              <td>{{ (r.IsActive ? 1 : 0) ? 'Yes' : 'No' }}</td>
+              <td>{{ (r.Approved ? 1 : 0) ? 'Yes' : 'No' }}</td>
+            </tr>
+
+            <tr *ngIf="!items.length && !loading">
+              <td colspan="7" class="empty">NO DATA FOUND</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div *ngIf="!loading && !rows.length" class="empty">
-        <div class="empty-title">No banks found</div>
-        <div class="empty-sub">Start by adding your first bank.</div>
-        <button class="btn btn-primary mt-2" (click)="openNew()">+ Add Bank</button>
+      <div class="card-footer">
+        <div class="text-muted">Total: {{ total }}</div>
       </div>
     </div>
   </div>
-
-  <!-- FORM -->
-  <form class="card" *ngIf="mode==='form'" [formGroup]="frm" (ngSubmit)="save()">
-    <div class="card-body">
-      <div *ngIf="error" class="alert danger mb-3">{{ error }}</div>
-      <div *ngIf="info" class="alert success mb-3">{{ info }}</div>
-
-      <div class="grid">
-        <div class="field">
-          <label class="form-label">Bank Name <span class="req">*</span></label>
-          <input class="form-control"
-                 formControlName="BankName"
-                 [class.is-invalid]="submitted && frm.controls.BankName.invalid"
-                 placeholder="e.g., City Bank Ltd.">
-          <div class="invalid" *ngIf="submitted && frm.controls.BankName.invalid">Bank Name is required</div>
-        </div>
-
-        <div class="field">
-          <label class="form-label">Short Name</label>
-          <input class="form-control" formControlName="BankShortName" placeholder="e.g., CBL">
-        </div>
-
-        <div class="field">
-          <label class="form-label">SWIFT Code</label>
-          <input class="form-control" formControlName="SwiftCode" placeholder="e.g., CIBLBDDHXXX">
-        </div>
-
-        <div class="field">
-          <label class="form-label">Active</label>
-          <select class="form-select" formControlName="IsActive">
-            <option [ngValue]="1">Yes</option>
-            <option [ngValue]="0">No</option>
-          </select>
-        </div>
-
-        <div class="field col-span-2">
-          <label class="form-label">Address</label>
-          <textarea class="form-control" rows="3" formControlName="BankAddress" placeholder="Branch/Corporate address"></textarea>
-        </div>
-      </div>
-    </div>
-
-    <div class="card-footer actions">
-      <button class="btn btn-primary" type="submit" [disabled]="saving">
-        <span *ngIf="saving" class="spinner"></span>{{ saving ? 'Saving...' : 'Save' }}
-      </button>
-      <button class="btn btn-outline" type="button" (click)="backToList()">Cancel</button>
-    </div>
-  </form>
 </div>

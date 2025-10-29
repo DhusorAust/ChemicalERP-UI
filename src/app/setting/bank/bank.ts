@@ -1,102 +1,114 @@
 import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
-type ViewMode = 'list' | 'form';
+type Status = 'ALL' | 'EDIT' | 'APPROVED';
+
 interface BankRow {
-  BankID?: number;
+  BankID: number;
   BankName: string;
   BankShortName?: string;
   BankAddress?: string;
   SwiftCode?: string;
-  IsActive?: number | boolean;
+  IsActive?: boolean | number;
+  Approved?: boolean | number;
+}
+
+interface GridEntity<T> {
+  Items: T[];
+  TotalCount: number;
+  Columnses?: any[];
 }
 
 @Component({
   standalone: true,
   selector: 'app-bank',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './bank.html',
-  styleUrls: ['./bank.css'],              // ← keep external CSS
-  encapsulation: ViewEncapsulation.None   // ← ensure styles always apply
+  styleUrls: ['./bank.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class Bank implements OnInit {
   private http = inject(HttpClient);
-  private fb = inject(FormBuilder);
 
+  // TODO: move to environment later
   apiBase = 'http://localhost:56172';
-  listUrl = `${this.apiBase}/api/setting/GetBankLIst`;
-  saveUrl = `${this.apiBase}/api/setting/SaveBank`;
+  endpoint(status: Status) { return `${this.apiBase}/api/Setting/getBankList/${status}`; }
 
-  mode: ViewMode = 'list';
-  rows: BankRow[] = [];
+  // UI state
+  status: Status = 'ALL';
+  search = '';
   loading = false;
-  saving = false;
-  submitted = false;
   error = '';
-  info = '';
 
-  frm = this.fb.group({
-    BankID: [0],
-    BankName: ['', Validators.required],
-    BankShortName: [''],
-    BankAddress: [''],
-    SwiftCode: [''],
-    IsActive: [1]
-  });
+  // data
+  items: BankRow[] = [];
+  total = 0;
+
+  // client-side sort (optional)
+  sortField: keyof BankRow | '' = '';
+  sortDir: 'asc' | 'desc' = 'asc';
 
   ngOnInit() { this.load(); }
 
   load() {
     this.loading = true; this.error = '';
-    this.http.get<BankRow[]>(this.listUrl).subscribe({
-      next: r => { this.rows = r ?? []; this.loading = false; },
-      error: _ => { this.error = 'Failed to load banks'; this.loading = false; }
-    });
-  }
+    let params = new HttpParams();
+    if ((this.search || '').trim()) params = params.set('q', this.search.trim());
 
-  openNew() {
-    this.frm.reset({ BankID: 0, BankName: '', BankShortName: '', BankAddress: '', SwiftCode: '', IsActive: 1 });
-    this.submitted = false; this.info=''; this.error=''; this.mode = 'form';
-  }
-  openEdit(r: BankRow) {
-    this.frm.reset({
-      BankID: r.BankID ?? 0,
-      BankName: r.BankName ?? '',
-      BankShortName: r.BankShortName ?? '',
-      BankAddress: r.BankAddress ?? '',
-      SwiftCode: r.SwiftCode ?? '',
-      IsActive: (r.IsActive ? 1 : 0)
-    });
-    this.submitted = false; this.info=''; this.error=''; this.mode = 'form';
-  }
-  backToList(){ this.mode = 'list'; }
-
-  save() {
-    this.submitted = true; this.error=''; this.info='';
-    if (this.frm.invalid) return;
-
-    this.saving = true;
-    const fd = new FormData();
-    Object.entries(this.frm.value).forEach(([k,v])=>{
-      if (v===null || v===undefined) return;
-      if (typeof v === 'boolean') fd.append(k, v ? '1' : '0'); else fd.append(k, String(v));
-    });
-
-    this.http.post<any>(this.saveUrl, fd).subscribe({
-      next: res => {
-        this.saving = false;
-        if (res?.ResultId && Number(res.ResultId) > 0) {
-          this.info = res?.Message || 'Saved';
-          this.backToList(); this.load();
-        } else {
-          this.error = res?.Message || 'Save failed';
+    this.http.get<GridEntity<BankRow>>(this.endpoint(this.status), { params })
+      .subscribe({
+        next: res => {
+          this.items = res?.Items ?? [];
+          this.total = res?.TotalCount ?? this.items.length;
+          // optional client sort if user toggled
+          if (this.sortField) this.applyClientSort();
+          this.loading = false;
+        },
+        error: err => {
+          console.error(err);
+          this.error = 'Failed to load data';
+          this.loading = false;
         }
-      },
-      error: _ => { this.saving = false; this.error = 'Save failed'; }
-    });
+      });
   }
 
-  trackById = (_: number, r: BankRow) => r.BankID ?? 0;
+  setStatus(s: Status) {
+    if (this.status !== s) { this.status = s; this.load(); }
+  }
+  onSearchEnter() { this.load(); }
+  refresh() { this.load(); }
+
+  // — client-side sort (simple, since no pagination) —
+  toggleSort(field: keyof BankRow) {
+    if (this.sortField === field) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDir = 'asc';
+    }
+    this.applyClientSort();
+  }
+  private applyClientSort() {
+    const f = this.sortField;
+    const dir = this.sortDir === 'asc' ? 1 : -1;
+    if (!f) return;
+
+    this.items = [...this.items].sort((a, b) => {
+      const va = (a?.[f] ?? '') as any;
+      const vb = (b?.[f] ?? '') as any;
+
+      // normalize booleans/numbers/strings
+      const na = typeof va === 'boolean' ? (va ? 1 : 0) : va;
+      const nb = typeof vb === 'boolean' ? (vb ? 1 : 0) : vb;
+
+      if (na == null && nb == null) return 0;
+      if (na == null) return 1;
+      if (nb == null) return -1;
+
+      if (typeof na === 'number' && typeof nb === 'number') return (na - nb) * dir;
+      return String(na).localeCompare(String(nb)) * dir;
+    });
+  }
 }

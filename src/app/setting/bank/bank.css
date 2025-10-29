@@ -1,3 +1,4 @@
+/* path: src/app/bank/bank.css */
 :root{
   --ink:#0e2a33;--ink-2:#173247;--muted:#7d90a4;--primary:#1f7a8c;
   --border:#d9e5ee;--ring:#a8d7e2;
@@ -26,3 +27,26 @@
 .alert.info{background:#eef7fb;border-color:#d6ebf5;color:#1c6c83}
 .alert.danger{background:#fff2f2;border-color:#ffd8d8;color:#c0342f}
 .empty{text-align:center;padding:24px 6px;color:#7d90a4}
+
+/* form layout */
+.form-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:12px;
+  align-items:flex-start;
+}
+.form-grid .col-span-2{grid-column: span 2}
+.req{color:#c0342f;font-weight:700;margin-left:4px}
+.check{display:flex;align-items:center;gap:8px;padding:6px 0}
+
+/* row actions */
+.icon-btn{
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  padding:4px 6px;
+  border-radius:8px;
+}
+.icon-btn:hover{background:#f0f6fb}

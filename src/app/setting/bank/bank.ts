@@ -1,3 +1,4 @@
+// path: src/app/bank/bank.ts
 import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,53 +29,30 @@ interface BankRow {
 export class Bank implements OnInit {
   private http = inject(HttpClient);
 
-  // Base for list APIs (unchanged)
   apiBase = 'http://localhost:56172';
+  endpointList = (s: Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
+  endpointCreate = `${this.apiBase}/api/Setting/saveBank`;   // adjust if different
+  endpointUpdate = `${this.apiBase}/api/Setting/saveBank`;   // same path if API upserts by BankID
 
-  // List endpoint (unchanged)
-  endpoint = (s: Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
-
-  // FINAL: Save endpoint (JSON) — as you requested
-  saveEndpoint = `http://localhost:56172/api/Setting/saveBank`;
-
-  // UI state
-  mode: 'list' | 'form' = 'list';
+  mode: 'list' | 'create' | 'edit' = 'list';
   status: Status = 'ALL';
   search = '';
   loading = false;
-  saving = false;
   error = '';
-  success = '';
 
-  // data
   items: BankRow[] = [];
   total = 0;
 
-  // form model (matches your SP/controller)
-  form: any = {
-    BankID: 0,
-    BankCode: '',
-    BankName: '',
-    BankShortName: '',
-    BankAddress: '',
-    SwiftCode: '',
-    ADCode: '',
-    IsBeneficiaryBank: 0,
-    IsAdvisingBank: 0,
-    IsNegoBank: 0,
-    IsActive: 1,
-    Approved: 0
-  };
-
-  // client-side sort
   sortField: keyof BankRow | '' = '';
   sortDir: 'asc' | 'desc' = 'asc';
 
-  ngOnInit() {
-    this.load();
-  }
+  newBank: BankRow | null = null;
+  saving = false;
+  saveError = '';
+  saveSuccess = '';
 
-  // tolerate PascalCase/camelCase from API
+  ngOnInit() { this.load(); }
+
   private normalizeRow(x: any): BankRow {
     return {
       BankID:        x.BankID        ?? x.bankID        ?? x.bankId        ?? 0,
@@ -87,17 +65,13 @@ export class Bank implements OnInit {
     };
   }
 
-  // -------- LIST ----------
   load() {
-    this.loading = true;
-    this.error = '';
-    this.success = '';
-
+    this.loading = true; this.error = '';
     let params = new HttpParams();
     const q = (this.search || '').trim();
     if (q) params = params.set('q', q);
 
-    this.http.get<any>(this.endpoint(this.status), { params })
+    this.http.get<any>(this.endpointList(this.status), { params })
       .pipe(
         map(res => {
           const rawItems = res?.Items ?? res?.items ?? res?.data ?? [];
@@ -113,36 +87,25 @@ export class Bank implements OnInit {
         finalize(() => { this.loading = false; })
       )
       .subscribe(({ items, total }) => {
-        this.items = items;
-        this.total = total;
+        this.items = items; this.total = total;
         if (this.sortField) this.applyClientSort();
       });
   }
 
-  setStatus(s: Status) {
-    this.status = s;
-    this.load();
-  }
-  onSearchEnter() { this.load(); }
-  refresh() { this.load(); }
+  setStatus(s: Status) { this.status = s; if (this.mode === 'list') this.load(); }
+  onSearchEnter() { if (this.mode === 'list') this.load(); }
+  refresh() { if (this.mode === 'list') this.load(); }
 
   toggleSort(field: keyof BankRow) {
-    if (this.sortField === field) {
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.sortField = field;
-      this.sortDir = 'asc';
-    }
+    if (this.sortField === field) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    else { this.sortField = field; this.sortDir = 'asc'; }
     this.applyClientSort();
   }
-
   private applyClientSort() {
     if (!this.sortField) return;
-    const f = this.sortField;
-    const dir = this.sortDir === 'asc' ? 1 : -1;
+    const f = this.sortField; const dir = this.sortDir === 'asc' ? 1 : -1;
     this.items = [...this.items].sort((a, b) => {
-      const va: any = (a as any)[f];
-      const vb: any = (b as any)[f];
+      const va: any = (a as any)[f]; const vb: any = (b as any)[f];
       const na = typeof va === 'boolean' ? (va ? 1 : 0) : (va ?? '');
       const nb = typeof vb === 'boolean' ? (vb ? 1 : 0) : (vb ?? '');
       if (typeof na === 'number' && typeof nb === 'number') return (na - nb) * dir;
@@ -150,119 +113,82 @@ export class Bank implements OnInit {
     });
   }
 
-  // -------- FORM ----------
-  openNew() {
-    this.error = '';
-    this.success = '';
-    this.form = {
-      BankID: 0,
-      BankCode: '',
-      BankName: '',
-      BankShortName: '',
-      BankAddress: '',
-      SwiftCode: '',
-      ADCode: '',
-      IsBeneficiaryBank: 0,
-      IsAdvisingBank: 0,
-      IsNegoBank: 0,
-      IsActive: 1,
-      Approved: 0
+  // ---- Create flow ----
+  startCreate() {
+    this.mode = 'create';
+    this.saveError = ''; this.saveSuccess = '';
+    this.newBank = {
+      BankID: 0, BankName: '', BankShortName: '', BankAddress: '', SwiftCode: '',
+      IsActive: 1, Approved: 0,
     };
-    this.mode = 'form';
   }
 
-  backToList() {
+  // ---- Edit flow ----
+  startEdit(row: BankRow) {
+    this.mode = 'edit';
+    this.saveError = ''; this.saveSuccess = '';
+    this.newBank = { ...row }; // Why: avoid mutating list row by reference
+  }
+
+  cancelForm() {
     this.mode = 'list';
-    this.error = '';
+    this.newBank = null;
+    this.saveError = ''; this.saveSuccess = '';
   }
 
-  // ====== SAVE to /api/Setting/saveBank (JSON) ======
-  // ====== SAVE to /api/Setting/saveBank (JSON) ======
-submit() {
-  this.error = '';
-  this.success = '';
-
-  if (!this.form.BankName || !String(this.form.BankName).trim()) {
-    this.error = 'Bank Name is required';
-    return;
+  submit() {
+    if (this.mode === 'create') this.submitCreate();
+    else if (this.mode === 'edit') this.submitUpdate();
   }
 
-  // SaveOption: Insert=1, Update=2
-  const isUpdate = this.form.BankID && this.form.BankID > 0;
+  private buildPayload(includeId = false) {
+    if (!this.newBank) return null;
+    const payload: any = {
+      BankName: (this.newBank.BankName || '').trim(),
+      BankShortName: (this.newBank.BankShortName || '').trim(),
+      BankAddress: (this.newBank.BankAddress || '').trim(),
+      SwiftCode: (this.newBank.SwiftCode || '').trim(),
+      IsActive: !!this.newBank.IsActive,
+      Approved: !!this.newBank.Approved
+    };
+    if (includeId) payload.BankID = this.newBank!.BankID ?? 0;
+    return payload;
+  }
 
-  // ISO dates to satisfy non-nullable DateTime properties (if any)
-  const nowIso = new Date().toISOString();
+  submitCreate() {
+    const payload = this.buildPayload(false);
+    if (!payload) return;
+    if (!payload.BankName) { this.saveError = 'Bank Name is required'; return; }
 
-  // ⚠️ Match Postman body (types & fields)
-  const payload = {
-    SaveOption: isUpdate ? 2 : 1,       // int
-    IdentityValue: 0,
-    ErrNo: 0,
-    ResultId: 0,
-    NoofRows: 0,
-    Message: 'string',
-    ExceptionError: 'string',
-    ErrorNo: 0,
-    ReturnValue: 'string',
+    this.saving = true; this.saveError = ''; this.saveSuccess = '';
+    this.http.post<any>(this.endpointCreate, payload)
+      .pipe(
+        catchError(err => { console.error('Create error:', err); this.saveError = err?.error?.message || 'Failed to save bank'; return of(null); }),
+        finalize(() => { this.saving = false; })
+      )
+      .subscribe(res => {
+        if (!res) return;
+        this.saveSuccess = 'Saved successfully';
+        setTimeout(() => { this.cancelForm(); this.load(); }, 400);
+      });
+  }
 
-    // who is acting (if your API needs it)
-    UserBy: Number(this.form.UserBy ?? 0),   // keep 0 if not used on server
+  submitUpdate() {
+    const payload = this.buildPayload(true);
+    if (!payload) return;
+    if (!payload.BankID) { this.saveError = 'Missing BankID'; return; }
+    if (!payload.BankName) { this.saveError = 'Bank Name is required'; return; }
 
-    // core entity fields
-    BankID: Number(this.form.BankID || 0),
-    BankCode: (this.form.BankCode || '').trim(),
-    BankName: (this.form.BankName || '').trim(),
-    BankShortName: (this.form.BankShortName || '').trim(),
-    BankAddress: (this.form.BankAddress || '').trim(),
-    SwiftCode: (this.form.SwiftCode || '').trim(),
-    ADCode: (this.form.ADCode || '').trim(),
-
-    // flags — keep same types as your working Postman:
-    IsBeneficiaryBank: this.form.IsBeneficiaryBank ? 1 : 0, // number
-    IsAdvisingBank:    this.form.IsAdvisingBank ? 1 : 0,     // number
-    IsNegoBank:        this.form.IsNegoBank ? 1 : 0,         // number
-    IsActive:          this.form.IsActive ? 1 : 0,           // number
-    Approved: !!this.form.Approved,                          // ✅ boolean
-
-    // audit fields (non-nullable on some models)
-    CreatedBy: Number(this.form.CreatedBy ?? 0),
-    CreatedDate: this.form.CreatedDate || nowIso,
-    UpdatedBy: Number(this.form.UpdatedBy ?? 0),
-    UpdatedDate: this.form.UpdatedDate || nowIso,
-    ApprovedBy: Number(this.form.ApprovedBy ?? 0),
-    ApprovedDate: this.form.ApprovedDate || nowIso
-  };
-
-  this.saving = true;
-
-  // JSON post (same as Postman)
-  this.http.post<any>('http://localhost:56172/api/Setting/saveBank', payload /*, { withCredentials: true } */)
-    .pipe(finalize(() => this.saving = false))
-    .subscribe({
-      next: (res) => {
-        if (res?.IsLogin === 1 && res?.redirectUrl) {
-          window.location.href = res.redirectUrl;
-          return;
-        }
-        if (res?.ErrorNo && res.ErrorNo !== 0) {
-          this.error = res?.Message || 'Save failed';
-          return;
-        }
-        if ((res?.NoofRows ?? 0) > 0 && (res?.ResultId ?? 0) > 0) {
-          this.success = res?.Message || 'Saved successfully.';
-          this.mode = 'list';
-          this.load();
-        } else {
-          this.error = res?.Message || 'Save failed';
-        }
-      },
-      error: (err) => {
-        // show exact model validation errors (helpful to see which field failed)
-        const details = err?.error?.errors || err?.error;
-        console.error('Bank save error:', err, details);
-        this.error = 'Bad Request (validation). See console for details.';
-      }
-    });
-}
-
+    this.saving = true; this.saveError = ''; this.saveSuccess = '';
+    this.http.post<any>(this.endpointUpdate, payload) // change to PUT if needed
+      .pipe(
+        catchError(err => { console.error('Update error:', err); this.saveError = err?.error?.message || 'Failed to update bank'; return of(null); }),
+        finalize(() => { this.saving = false; })
+      )
+      .subscribe(res => {
+        if (!res) return;
+        this.saveSuccess = 'Updated successfully';
+        setTimeout(() => { this.cancelForm(); this.load(); }, 400);
+      });
+  }
 }

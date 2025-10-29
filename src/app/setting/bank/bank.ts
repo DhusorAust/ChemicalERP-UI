@@ -28,14 +28,14 @@ interface BankRow {
 export class Bank implements OnInit {
   private http = inject(HttpClient);
 
-  // TODO: move to environment later
+  // Base for list APIs (unchanged)
   apiBase = 'http://localhost:56172';
 
-  // list endpoints (unchanged)
+  // List endpoint (unchanged)
   endpoint = (s: Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
 
-  // NEW: save endpoint for [FromForm] action
-  saveEndpoint = `${this.apiBase}/api/Setting/saveBank`;
+  // FINAL: Save endpoint (JSON) — as you requested
+  saveEndpoint = `http://localhost:56172/api/Setting/saveBank`;
 
   // UI state
   mode: 'list' | 'form' = 'list';
@@ -50,7 +50,7 @@ export class Bank implements OnInit {
   items: BankRow[] = [];
   total = 0;
 
-  // form model (extended to match your SP/controller)
+  // form model (matches your SP/controller)
   form: any = {
     BankID: 0,
     BankCode: '',
@@ -66,7 +66,7 @@ export class Bank implements OnInit {
     Approved: 0
   };
 
-  // client-side sort (optional)
+  // client-side sort
   sortField: keyof BankRow | '' = '';
   sortDir: 'asc' | 'desc' = 'asc';
 
@@ -174,74 +174,95 @@ export class Bank implements OnInit {
   backToList() {
     this.mode = 'list';
     this.error = '';
-    // keep success so user can see “Saved” after returning
   }
 
-  // ====== NEW: SAVE via FormData to [FromForm] /api/Setting/save ======
-  submit() {
-    this.error = '';
-    this.success = '';
+  // ====== SAVE to /api/Setting/saveBank (JSON) ======
+  // ====== SAVE to /api/Setting/saveBank (JSON) ======
+submit() {
+  this.error = '';
+  this.success = '';
 
-    // basic validation
-    if (!this.form.BankName || !String(this.form.BankName).trim()) {
-      this.error = 'Bank Name is required';
-      return;
-    }
+  if (!this.form.BankName || !String(this.form.BankName).trim()) {
+    this.error = 'Bank Name is required';
+    return;
+  }
 
-    // SaveOption: Insert=1 (BankID=0), Update=2 (BankID>0)
-    const saveOption = this.form.BankID && this.form.BankID > 0 ? 2 : 1;
+  // SaveOption: Insert=1, Update=2
+  const isUpdate = this.form.BankID && this.form.BankID > 0;
 
-    // Build FormData to match [FromForm] Bas_Bank
-    const fd = new FormData();
-    fd.append('SaveOption', String(saveOption));
-    fd.append('BankID', String(this.form.BankID || 0));
-    fd.append('BankCode', (this.form.BankCode || '').trim());
-    fd.append('BankName', (this.form.BankName || '').trim());
-    fd.append('BankShortName', (this.form.BankShortName || '').trim());
-    fd.append('BankAddress', (this.form.BankAddress || '').trim());
-    fd.append('SwiftCode', (this.form.SwiftCode || '').trim());
-    fd.append('ADCode', (this.form.ADCode || '').trim());
+  // ISO dates to satisfy non-nullable DateTime properties (if any)
+  const nowIso = new Date().toISOString();
 
-    // ints for bit fields expected by your SP/model
-    fd.append('IsBeneficiaryBank', (this.form.IsBeneficiaryBank ? 1 : 0).toString());
-    fd.append('IsAdvisingBank', (this.form.IsAdvisingBank ? 1 : 0).toString());
-    fd.append('IsNegoBank', (this.form.IsNegoBank ? 1 : 0).toString());
-    fd.append('IsActive', (this.form.IsActive ? 1 : 0).toString());
-    fd.append('Approved', (this.form.Approved ? 1 : 0).toString());
+  // ⚠️ Match Postman body (types & fields)
+  const payload = {
+    SaveOption: isUpdate ? 2 : 1,       // int
+    IdentityValue: 0,
+    ErrNo: 0,
+    ResultId: 0,
+    NoofRows: 0,
+    Message: 'string',
+    ExceptionError: 'string',
+    ErrorNo: 0,
+    ReturnValue: 'string',
 
-    // NOTE: UserBy is set from Session in your controller, so not needed here.
+    // who is acting (if your API needs it)
+    UserBy: Number(this.form.UserBy ?? 0),   // keep 0 if not used on server
 
-    this.saving = true;
+    // core entity fields
+    BankID: Number(this.form.BankID || 0),
+    BankCode: (this.form.BankCode || '').trim(),
+    BankName: (this.form.BankName || '').trim(),
+    BankShortName: (this.form.BankShortName || '').trim(),
+    BankAddress: (this.form.BankAddress || '').trim(),
+    SwiftCode: (this.form.SwiftCode || '').trim(),
+    ADCode: (this.form.ADCode || '').trim(),
 
-    this.http.post<any>(this.saveEndpoint, fd)
-      .pipe(finalize(() => this.saving = false))
-      .subscribe({
-        next: (res) => {
-          // Session expired → redirect hint from server
-          if (res?.IsLogin === 1 && res?.redirectUrl) {
-            window.location.href = res.redirectUrl;
-            return;
-          }
+    // flags — keep same types as your working Postman:
+    IsBeneficiaryBank: this.form.IsBeneficiaryBank ? 1 : 0, // number
+    IsAdvisingBank:    this.form.IsAdvisingBank ? 1 : 0,     // number
+    IsNegoBank:        this.form.IsNegoBank ? 1 : 0,         // number
+    IsActive:          this.form.IsActive ? 1 : 0,           // number
+    Approved: !!this.form.Approved,                          // ✅ boolean
 
-          // Repository/SP error number
-          if (res?.ErrorNo && res.ErrorNo !== 0) {
-            this.error = res?.Message || 'Save failed';
-            return;
-          }
+    // audit fields (non-nullable on some models)
+    CreatedBy: Number(this.form.CreatedBy ?? 0),
+    CreatedDate: this.form.CreatedDate || nowIso,
+    UpdatedBy: Number(this.form.UpdatedBy ?? 0),
+    UpdatedDate: this.form.UpdatedDate || nowIso,
+    ApprovedBy: Number(this.form.ApprovedBy ?? 0),
+    ApprovedDate: this.form.ApprovedDate || nowIso
+  };
 
-          // Success check (per your SaveAsync return)
-          if ((res?.NoofRows ?? 0) > 0 && (res?.ResultId ?? 0) > 0) {
-            this.success = res?.Message || 'Saved successfully.';
-            this.mode = 'list';
-            this.load();
-          } else {
-            this.error = res?.Message || 'Save failed';
-          }
-        },
-        error: (err) => {
-          console.error('Bank save error:', err);
-          this.error = err?.error?.message || 'Save failed';
+  this.saving = true;
+
+  // JSON post (same as Postman)
+  this.http.post<any>('http://localhost:56172/api/Setting/saveBank', payload /*, { withCredentials: true } */)
+    .pipe(finalize(() => this.saving = false))
+    .subscribe({
+      next: (res) => {
+        if (res?.IsLogin === 1 && res?.redirectUrl) {
+          window.location.href = res.redirectUrl;
+          return;
         }
-      });
-  }
+        if (res?.ErrorNo && res.ErrorNo !== 0) {
+          this.error = res?.Message || 'Save failed';
+          return;
+        }
+        if ((res?.NoofRows ?? 0) > 0 && (res?.ResultId ?? 0) > 0) {
+          this.success = res?.Message || 'Saved successfully.';
+          this.mode = 'list';
+          this.load();
+        } else {
+          this.error = res?.Message || 'Save failed';
+        }
+      },
+      error: (err) => {
+        // show exact model validation errors (helpful to see which field failed)
+        const details = err?.error?.errors || err?.error;
+        console.error('Bank save error:', err, details);
+        this.error = 'Bad Request (validation). See console for details.';
+      }
+    });
+}
+
 }

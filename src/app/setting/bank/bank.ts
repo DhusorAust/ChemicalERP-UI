@@ -2,6 +2,8 @@ import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { map, catchError, finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 type Status = 'ALL' | 'EDIT' | 'APPROVED';
 
@@ -13,12 +15,6 @@ interface BankRow {
   SwiftCode?: string;
   IsActive?: boolean | number;
   Approved?: boolean | number;
-}
-
-interface GridEntity<T> {
-  Items: T[];
-  TotalCount: number;
-  Columnses?: any[];
 }
 
 @Component({
@@ -34,7 +30,7 @@ export class Bank implements OnInit {
 
   // TODO: move to environment later
   apiBase = 'http://localhost:56172';
-  endpoint(status: Status) { return `${this.apiBase}/api/Setting/getBankList/${status}`; }
+  endpoint = (s: Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
 
   // UI state
   status: Status = 'ALL';
@@ -50,37 +46,61 @@ export class Bank implements OnInit {
   sortField: keyof BankRow | '' = '';
   sortDir: 'asc' | 'desc' = 'asc';
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+  }
+
+  // tolerate PascalCase/camelCase from API
+  private normalizeRow(x: any): BankRow {
+    return {
+      BankID:        x.BankID        ?? x.bankID        ?? x.bankId        ?? 0,
+      BankName:      x.BankName      ?? x.bankName      ?? '',
+      BankShortName: x.BankShortName ?? x.bankShortName ?? '',
+      BankAddress:   x.BankAddress   ?? x.bankAddress   ?? '',
+      SwiftCode:     x.SwiftCode     ?? x.swiftCode     ?? '',
+      IsActive:      x.IsActive      ?? x.isActive      ?? 0,
+      Approved:      x.Approved      ?? x.approved      ?? 0,
+    };
+  }
 
   load() {
-    this.loading = true; this.error = '';
-    let params = new HttpParams();
-    if ((this.search || '').trim()) params = params.set('q', this.search.trim());
+    this.loading = true;
+    this.error = '';
 
-    this.http.get<GridEntity<BankRow>>(this.endpoint(this.status), { params })
-      .subscribe({
-        next: res => {
-          this.items = res?.Items ?? [];
-          this.total = res?.TotalCount ?? this.items.length;
-          // optional client sort if user toggled
-          if (this.sortField) this.applyClientSort();
-          this.loading = false;
-        },
-        error: err => {
-          console.error(err);
+    let params = new HttpParams();
+    const q = (this.search || '').trim();
+    if (q) params = params.set('q', q);
+
+    this.http.get<any>(this.endpoint(this.status), { params })
+      .pipe(
+        map(res => {
+          const rawItems = res?.Items ?? res?.items ?? res?.data ?? [];
+          const total = res?.TotalCount ?? res?.totalCount ?? res?.total ?? rawItems.length;
+          const items: BankRow[] = (rawItems as any[]).map(r => this.normalizeRow(r));
+          return { items, total };
+        }),
+        catchError(err => {
+          console.error('Bank load error:', err);
           this.error = 'Failed to load data';
-          this.loading = false;
-        }
+          return of({ items: [] as BankRow[], total: 0 });
+        }),
+        finalize(() => { this.loading = false; })
+      )
+      .subscribe(({ items, total }) => {
+        this.items = items;
+        this.total = total;
+        if (this.sortField) this.applyClientSort();
       });
   }
 
+  // Always reload, even if clicking the active tab (fixes “need two clicks”)
   setStatus(s: Status) {
-    if (this.status !== s) { this.status = s; this.load(); }
+    this.status = s;
+    this.load();
   }
   onSearchEnter() { this.load(); }
   refresh() { this.load(); }
 
-  // — client-side sort (simple, since no pagination) —
   toggleSort(field: keyof BankRow) {
     if (this.sortField === field) {
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -90,23 +110,16 @@ export class Bank implements OnInit {
     }
     this.applyClientSort();
   }
+
   private applyClientSort() {
+    if (!this.sortField) return;
     const f = this.sortField;
     const dir = this.sortDir === 'asc' ? 1 : -1;
-    if (!f) return;
-
     this.items = [...this.items].sort((a, b) => {
-      const va = (a?.[f] ?? '') as any;
-      const vb = (b?.[f] ?? '') as any;
-
-      // normalize booleans/numbers/strings
-      const na = typeof va === 'boolean' ? (va ? 1 : 0) : va;
-      const nb = typeof vb === 'boolean' ? (vb ? 1 : 0) : vb;
-
-      if (na == null && nb == null) return 0;
-      if (na == null) return 1;
-      if (nb == null) return -1;
-
+      const va: any = (a as any)[f];
+      const vb: any = (b as any)[f];
+      const na = typeof va === 'boolean' ? (va ? 1 : 0) : (va ?? '');
+      const nb = typeof vb === 'boolean' ? (vb ? 1 : 0) : (vb ?? '');
       if (typeof na === 'number' && typeof nb === 'number') return (na - nb) * dir;
       return String(na).localeCompare(String(nb)) * dir;
     });

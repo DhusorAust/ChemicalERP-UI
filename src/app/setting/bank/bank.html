@@ -6,11 +6,14 @@
       <div class="head-right">
         <input class="form-control" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="onSearchEnter()">
         <div class="btn-group">
-          <button class="btn btn-outline" [class.btn-primary]="status==='ALL'" (click)="setStatus('ALL')">All</button>
-          <button class="btn btn-outline" [class.btn-primary]="status==='EDIT'" (click)="setStatus('EDIT')">Edit</button>
-          <button class="btn btn-outline" [class.btn-primary]="status==='APPROVED'" (click)="setStatus('APPROVED')">Approved</button>
+          <button type="button" class="btn btn-outline"
+                  [class.btn-primary]="status==='ALL'" (click)="setStatus('ALL')">All</button>
+          <button type="button" class="btn btn-outline"
+                  [class.btn-primary]="status==='EDIT'" (click)="setStatus('EDIT')">Edit</button>
+          <button type="button" class="btn btn-outline"
+                  [class.btn-primary]="status==='APPROVED'" (click)="setStatus('APPROVED')">Approved</button>
         </div>
-        <button class="btn btn-outline" (click)="refresh()">Refresh</button>
+        <button type="button" class="btn btn-outline" (click)="refresh()">Refresh</button>
       </div>
     </div>
   </div>
@@ -21,7 +24,7 @@
       <div *ngIf="loading" class="alert info">Loading...</div>
       <div *ngIf="error" class="alert danger">{{ error }}</div>
 
-      <div class="table-responsive" *ngIf="!loading">
+      <div class="table-responsive">
         <table class="table">
           <thead>
             <tr>
@@ -29,22 +32,22 @@
                 ID <span *ngIf="sortField==='BankID'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
               </th>
               <th (click)="toggleSort('BankName')" style="cursor:pointer">
-                Bank Name <span *ngIf="sortField==='BankName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+                BANK NAME <span *ngIf="sortField==='BankName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
               </th>
               <th (click)="toggleSort('BankShortName')" style="cursor:pointer">
-                Short <span *ngIf="sortField==='BankShortName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+                SHORT <span *ngIf="sortField==='BankShortName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
               </th>
               <th (click)="toggleSort('SwiftCode')" style="cursor:pointer">
-                Swift <span *ngIf="sortField==='SwiftCode'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+                SWIFT <span *ngIf="sortField==='SwiftCode'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
               </th>
               <th (click)="toggleSort('BankAddress')" style="cursor:pointer">
-                Address <span *ngIf="sortField==='BankAddress'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+                ADDRESS <span *ngIf="sortField==='BankAddress'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
               </th>
               <th (click)="toggleSort('IsActive')" style="width:90px;cursor:pointer">
-                Active <span *ngIf="sortField==='IsActive'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+                ACTIVE <span *ngIf="sortField==='IsActive'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
               </th>
               <th (click)="toggleSort('Approved')" style="width:110px;cursor:pointer">
-                Approved <span *ngIf="sortField==='Approved'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+                APPROVED <span *ngIf="sortField==='Approved'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
               </th>
             </tr>
           </thead>

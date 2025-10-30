@@ -5,16 +5,12 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { of } from 'rxjs';
- 
 import { Int01 } from './../../common';
-import type { BankRow, BankSaveDto } from './bank.model';
- 
+import type { Bas_Bank, BankSaveDto } from './bank.model';
 import { environment } from '../../environments/environment';
 import { Status } from './../../common';
 import { ApiSaveResponse } from './../../common';
- console.log('[env] apiBase =', environment.apiBase); 
- 
-  
+
 @Component({
   standalone: true,
   selector: 'app-bank',
@@ -42,9 +38,9 @@ export class Bank implements OnInit {
   saveSuccess = '';
   search = '';
 
-  items: BankRow[] = [];
+  items: Bas_Bank[] = [];
   form: any = this.blankForm();
-  editingOriginal: BankRow | null = null; // keep originals for update audit
+  editingOriginal: Bas_Bank | null = null; // keep originals for update audit
 
   ngOnInit(): void { this.load(); }
 
@@ -58,14 +54,11 @@ export class Bank implements OnInit {
       BankAddress: '',
       SwiftCode: '',
       ADCode: '',
-
       IsBeneficiaryBankBool: false,
       IsAdvisingBankBool: false,
       IsNegoBankBool: false,
       IsActiveBool: true,
-
       Approved: false,
-
       CreatedBy: 0,
       CreatedDate: '',
       UpdatedBy: 0,
@@ -79,7 +72,7 @@ export class Bank implements OnInit {
   }
   private isoNow(): string { return new Date().toISOString(); }
 
-  private normalizeRow(x: any): BankRow {
+  private normalizeRow(x: any): Bas_Bank {
     return {
       BankID: x.BankID ?? 0,
       BankCode: x.BankCode ?? '',
@@ -88,16 +81,13 @@ export class Bank implements OnInit {
       BankAddress: x.BankAddress ?? '',
       SwiftCode: x.SwiftCode ?? '',
       ADCode: x.ADCode ?? '',
-
       IsBeneficiaryBank: (x.IsBeneficiaryBank ?? 0) as Int01,
       IsAdvisingBank: (x.IsAdvisingBank ?? 0) as Int01,
       IsNegoBank: (x.IsNegoBank ?? 0) as Int01,
       IsActive: (x.IsActive ?? 0) as Int01,
-
       Approved: !!x.Approved,
       ApprovedBy: x.ApprovedBy ?? 0,
       ApprovedDate: x.ApprovedDate ?? '',
-
       CreatedBy: x.CreatedBy ?? 0,
       CreatedDate: x.CreatedDate ?? '',
       UpdatedBy: x.UpdatedBy ?? 0,
@@ -120,7 +110,7 @@ export class Bank implements OnInit {
         catchError(err => {
           console.error('Load error:', err);
           this.error = err?.error?.title || 'Failed to load banks';
-          return of([] as BankRow[]);
+          return of([] as Bas_Bank[]);
         }),
         finalize(() => this.loading = false)
       )
@@ -141,7 +131,7 @@ export class Bank implements OnInit {
     this.editingOriginal = null;
   }
 
-  startEdit(r: BankRow) {
+  startEdit(r: Bas_Bank) {
     this.mode = 'edit'; this.saveError = ''; this.saveSuccess = '';
     this.editingOriginal = r;
 
@@ -153,14 +143,11 @@ export class Bank implements OnInit {
       BankAddress: r.BankAddress,
       SwiftCode: r.SwiftCode,
       ADCode: r.ADCode,
-
       IsBeneficiaryBankBool: r.IsBeneficiaryBank === 1,
       IsAdvisingBankBool: r.IsAdvisingBank === 1,
       IsNegoBankBool: r.IsNegoBank === 1,
       IsActiveBool: r.IsActive === 1,
-
       Approved: !!r.Approved,
-
       CreatedBy: r.CreatedBy,
       CreatedDate: r.CreatedDate,
       UpdatedBy: r.UpdatedBy,
@@ -194,7 +181,6 @@ export class Bank implements OnInit {
       ErrorNo: 0,
       ReturnValue: 'string',
       UserBy: 0,
-
       BankID: 0,
       BankCode: (this.form.BankCode ?? 'string').trim() || 'string',
       BankName: (this.form.BankName ?? 'string').trim() || 'string',
@@ -202,17 +188,14 @@ export class Bank implements OnInit {
       BankAddress: (this.form.BankAddress ?? 'string').trim() || 'string',
       SwiftCode: (this.form.SwiftCode ?? 'string').trim() || 'string',
       ADCode: (this.form.ADCode ?? 'string').trim() || 'string',
-
       IsBeneficiaryBank: this.toInt01(this.form.IsBeneficiaryBankBool),
       IsAdvisingBank: this.toInt01(this.form.IsAdvisingBankBool),
       IsNegoBank: this.toInt01(this.form.IsNegoBankBool),
       IsActive: this.toInt01(this.form.IsActiveBool),
-
       CreatedBy: 0,
       CreatedDate: now,
       UpdatedBy: 0,
       UpdatedDate: now,
-
       Approved: !!this.form.Approved,
       ApprovedBy: !!this.form.Approved ? (this.form.ApprovedBy ?? 0) : 0,
       ApprovedDate: !!this.form.Approved ? (this.form.ApprovedDate || now) : now
@@ -235,7 +218,6 @@ export class Bank implements OnInit {
       ErrorNo: 0,
       ReturnValue: 'string',
       UserBy: 0,
-
       BankID: this.form.BankID ?? this.editingOriginal.BankID,
       BankCode: (this.form.BankCode ?? 'string').trim() || 'string',
       BankName: (this.form.BankName ?? 'string').trim() || 'string',
@@ -243,20 +225,14 @@ export class Bank implements OnInit {
       BankAddress: (this.form.BankAddress ?? 'string').trim() || 'string',
       SwiftCode: (this.form.SwiftCode ?? 'string').trim() || 'string',
       ADCode: (this.form.ADCode ?? 'string').trim() || 'string',
-
       IsBeneficiaryBank: this.toInt01(this.form.IsBeneficiaryBankBool),
       IsAdvisingBank: this.toInt01(this.form.IsAdvisingBankBool),
       IsNegoBank: this.toInt01(this.form.IsNegoBankBool),
       IsActive: this.toInt01(this.form.IsActiveBool),
-
-      // preserve originals
       CreatedBy: this.editingOriginal.CreatedBy ?? 0,
       CreatedDate: this.editingOriginal.CreatedDate || now,
-
-      // update audit now
       UpdatedBy: 0,
       UpdatedDate: now,
-
       Approved: !!this.form.Approved,
       ApprovedBy: !!this.form.Approved ? (this.form.ApprovedBy ?? 0) : 0,
       ApprovedDate: !!this.form.Approved ? (this.form.ApprovedDate || now) : now

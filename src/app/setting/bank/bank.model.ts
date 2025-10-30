@@ -1,6 +1,6 @@
 import { BaseEntity } from './../../common';
 import { Int01 } from './../../common';
-export interface BankRow {
+export interface Bas_Bank {
   BankID: number;
   BankCode: string;
   BankName: string;
@@ -24,4 +24,4 @@ export interface BankRow {
   UpdatedDate: string;
 }
 
-export interface BankSaveDto extends BankRow,BaseEntity {}
+export interface BankSaveDto extends Bas_Bank,BaseEntity {}

@@ -44,6 +44,13 @@ interface BankSaveDto extends BankRow {
   ReturnValue: string;
   UserBy: number;
 }
+type ApiSaveResponse = {
+  ResultId?: number;      // 1 = success, 0 = fail
+  NoofRows?: number;
+  ErrorNo?: number;
+  Message?: string;
+  IdentityValue?: number; // sometimes echoed by backend
+};
 
 @Component({
   standalone: true,
@@ -293,34 +300,48 @@ export class Bank implements OnInit {
   }
 
   submit(f?: NgForm) {
-    if (!this.form.BankName || !String(this.form.BankName).trim()) {
-      this.saveError = 'Bank Name is required';
-      return;
-    }
-
-    const isUpdate = !!this.form.BankID && this.form.BankID !== 0;
-    const body = isUpdate ? this.buildUpdatePayload() : this.buildInsertPayload();
-    if (!body) return;
-
-    this.saving = true; this.saveError = ''; this.saveSuccess = '';
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-
-    this.http.post<any>(this.endpointSave, body, { headers })
-      .pipe(finalize(() => this.saving = false))
-      .subscribe({
-        next: _ => {
-          this.saveSuccess = isUpdate ? 'Updated successfully' : 'Saved successfully';
-          this.cancelForm();
-          this.load(); // reload current list (ALL/EDIT/APPROVED)
-        },
-        error: err => {
-          console.error('Save error:', err);
-          this.saveError =
-            err?.error?.title ||
-            err?.error?.Message ||
-            err?.message ||
-            'Save failed. Please verify field types and required values.';
-        }
-      });
+  if (!this.form.BankName || !String(this.form.BankName).trim()) {
+    this.saveError = 'Bank Name is required';
+    return;
   }
+
+  const isUpdate = !!this.form.BankID && this.form.BankID !== 0;
+  const body = isUpdate ? this.buildUpdatePayload() : this.buildInsertPayload();
+  if (!body) return;
+
+  this.saving = true; this.saveError = ''; this.saveSuccess = '';
+  const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+  this.http.post<ApiSaveResponse>(this.endpointSave, body, { headers })
+    .pipe(finalize(() => this.saving = false))
+    .subscribe({
+      next: (res) => {
+        debugger;
+        
+        // ✅ Backend contract: success when ResultId > 1
+        const resultId = Number(res?.ResultId ?? 0);
+        const ok = resultId > 1 || ((res?.NoofRows ?? 0) > 0 && (res?.ErrorNo ?? 0) === 0);
+
+        if (ok) {
+          this.saveSuccess = res?.Message || (isUpdate ? 'Updated successfully' : 'Saved successfully');
+
+          // go back to grid "Edit" list
+          this.cancelForm();         // resets form & mode='list'
+          this.status = 'EDIT';      // force Edit list
+          this.load();               // reload grid
+        } else {
+          this.saveError = res?.Message || `Save failed (ResultId=${resultId}).`;
+        }
+      },
+      error: (err) => {
+        console.error('Save error:', err);
+        this.saveError =
+          err?.error?.title ||
+          err?.error?.Message ||
+          err?.message ||
+          'Save failed. Please verify field types and required values.';
+      }
+    });
+}
+
 }

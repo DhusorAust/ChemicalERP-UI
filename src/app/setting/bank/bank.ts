@@ -5,51 +5,16 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { of } from 'rxjs';
-
-import type * as common from '../../common';
-
+ 
+import { Int01 } from './../../common';
+import type { BankRow, BankSaveDto } from './bank.model';
+ 
 import { environment } from '../../environments/environment';
-
+import { Status } from './../../common';
+import { ApiSaveResponse } from './../../common';
  console.log('[env] apiBase =', environment.apiBase); 
  
-interface BankRow {
-  BankID: number;
-  BankCode: string;
-  BankName: string;
-  BankShortName: string;
-  BankAddress: string;
-  SwiftCode: string;
-  ADCode: string;
-
-  IsBeneficiaryBank: common.Int01;
-  IsAdvisingBank: common.Int01;
-  IsNegoBank: common.Int01;
-  IsActive: common.Int01;
-
-  Approved: boolean;
-  ApprovedBy: number;
-  ApprovedDate: string;
-
-  CreatedBy: number;
-  CreatedDate: string;
-  UpdatedBy: number;
-  UpdatedDate: string;
-}
-
-interface BankSaveDto extends BankRow {
-  SaveOption: number;
-  IdentityValue: number;
-  ErrNo: number;
-  ResultId: number;
-  NoofRows: number;
-  Message: string;
-  ExceptionError: string;
-  ErrorNo: number;
-  ReturnValue: string;
-  UserBy: number;
-}
- 
-
+  
 @Component({
   standalone: true,
   selector: 'app-bank',
@@ -64,12 +29,12 @@ export class Bank implements OnInit {
   // API
  
   apiBase = environment.apiBase; 
-  endpointList = (s: common.Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
+  endpointList = (s: Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
   endpointSave = `${this.apiBase}/api/Setting/saveBank`;
 
   // UI state
   mode: 'list' | 'create' | 'edit' = 'list';
-  status: common.Status = 'EDIT';
+  status: Status = 'EDIT';
   loading = false;
   saving = false;
   error = '';
@@ -109,7 +74,7 @@ export class Bank implements OnInit {
       ApprovedDate: ''
     };
   }
-  private toInt01(v: any): common.Int01 {
+  private toInt01(v: any): Int01 {
     return (v === true || v === 1 || String(v).toLowerCase() === 'true') ? 1 : 0;
   }
   private isoNow(): string { return new Date().toISOString(); }
@@ -124,10 +89,10 @@ export class Bank implements OnInit {
       SwiftCode: x.SwiftCode ?? '',
       ADCode: x.ADCode ?? '',
 
-      IsBeneficiaryBank: (x.IsBeneficiaryBank ?? 0) as common.Int01,
-      IsAdvisingBank: (x.IsAdvisingBank ?? 0) as common.Int01,
-      IsNegoBank: (x.IsNegoBank ?? 0) as common.Int01,
-      IsActive: (x.IsActive ?? 0) as common.Int01,
+      IsBeneficiaryBank: (x.IsBeneficiaryBank ?? 0) as Int01,
+      IsAdvisingBank: (x.IsAdvisingBank ?? 0) as Int01,
+      IsNegoBank: (x.IsNegoBank ?? 0) as Int01,
+      IsActive: (x.IsActive ?? 0) as Int01,
 
       Approved: !!x.Approved,
       ApprovedBy: x.ApprovedBy ?? 0,
@@ -162,7 +127,7 @@ export class Bank implements OnInit {
       .subscribe(list => this.items = list);
   }
 
-  setStatus(s: common.Status) {
+  setStatus(s: Status) {
     if (this.status === s) return;
     this.status = s;
     if (this.mode === 'list') this.load();
@@ -311,7 +276,7 @@ export class Bank implements OnInit {
   this.saving = true; this.saveError = ''; this.saveSuccess = '';
   const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
-  this.http.post<common.ApiSaveResponse>(this.endpointSave, body, { headers })
+  this.http.post<ApiSaveResponse>(this.endpointSave, body, { headers })
     .pipe(finalize(() => this.saving = false))
     .subscribe({
       next: (res) => {

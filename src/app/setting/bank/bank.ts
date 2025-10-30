@@ -6,7 +6,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
 
-type Status = 'ALL' | 'EDIT' | 'APPROVED';
+type Status = 'EDIT' | 'APPROVED';
 
 interface BankRow {
   BankID: number;
@@ -35,7 +35,7 @@ export class Bank implements OnInit {
   endpointUpdate = `${this.apiBase}/api/Setting/saveBank`;   // same path if API upserts by BankID
 
   mode: 'list' | 'create' | 'edit' = 'list';
-  status: Status = 'ALL';
+  status: Status = 'EDIT';
   search = '';
   loading = false;
   error = '';

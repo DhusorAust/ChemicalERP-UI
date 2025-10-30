@@ -6,16 +6,10 @@
       <h2 class="title">Bank</h2>
       <div class="head-right">
         <ng-container *ngIf="mode==='list'; else formHeader">
-          <input class="form-control" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="onSearchEnter()">
-          <div class="btn-group">
-            <button type="button" class="btn btn-outline"
-                    [class.btn-primary]="status==='ALL'" (click)="setStatus('ALL')">All</button>
-            <button type="button" class="btn btn-outline"
-                    [class.btn-primary]="status==='EDIT'" (click)="setStatus('EDIT')">Edit</button>
-            <button type="button" class="btn btn-outline"
-                    [class.btn-primary]="status==='APPROVED'" (click)="setStatus('APPROVED')">Approved</button>
-          </div>
-          <button type="button" class="btn btn-outline" (click)="refresh()">Refresh</button>
+          <input class="form-control" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="onSearchEnter()"> 
+
+          <button type="button" class="btn btn-outline" (click)="setStatus('EDIT')">Edit</button>
+          <button type="button" class="btn btn-outline" (click)="setStatus('APPROVED')">Approved</button> 
           <button type="button" class="btn btn-primary" (click)="startCreate()">Add New</button>
         </ng-container>
 

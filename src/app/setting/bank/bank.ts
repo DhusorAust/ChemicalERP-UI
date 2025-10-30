@@ -1,3 +1,4 @@
+import { App } from './../../app';
 import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -5,9 +6,12 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 
-type Int01 = 0 | 1;
-type Status = 'EDIT' | 'APPROVED';
+import type * as common2 from '../../common';
 
+import { environment } from '../../environments/environment';
+
+ console.log('[env] apiBase =', environment.apiBase); 
+ 
 interface BankRow {
   BankID: number;
   BankCode: string;
@@ -17,10 +21,10 @@ interface BankRow {
   SwiftCode: string;
   ADCode: string;
 
-  IsBeneficiaryBank: Int01;
-  IsAdvisingBank: Int01;
-  IsNegoBank: Int01;
-  IsActive: Int01;
+  IsBeneficiaryBank: common2.Int01;
+  IsAdvisingBank: common2.Int01;
+  IsNegoBank: common2.Int01;
+  IsActive: common2.Int01;
 
   Approved: boolean;
   ApprovedBy: number;
@@ -44,13 +48,7 @@ interface BankSaveDto extends BankRow {
   ReturnValue: string;
   UserBy: number;
 }
-type ApiSaveResponse = {
-  ResultId?: number;      // 1 = success, 0 = fail
-  NoofRows?: number;
-  ErrorNo?: number;
-  Message?: string;
-  IdentityValue?: number; // sometimes echoed by backend
-};
+ 
 
 @Component({
   standalone: true,
@@ -64,13 +62,14 @@ export class Bank implements OnInit {
   private http = inject(HttpClient);
 
   // API
-  apiBase = 'http://localhost:56172';
-  endpointList = (s: Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
+ 
+  apiBase = environment.apiBase; 
+  endpointList = (s: common2.Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
   endpointSave = `${this.apiBase}/api/Setting/saveBank`;
 
   // UI state
   mode: 'list' | 'create' | 'edit' = 'list';
-  status: Status = 'EDIT';
+  status: common2.Status = 'EDIT';
   loading = false;
   saving = false;
   error = '';
@@ -110,7 +109,7 @@ export class Bank implements OnInit {
       ApprovedDate: ''
     };
   }
-  private toInt01(v: any): Int01 {
+  private toInt01(v: any): common2.Int01 {
     return (v === true || v === 1 || String(v).toLowerCase() === 'true') ? 1 : 0;
   }
   private isoNow(): string { return new Date().toISOString(); }
@@ -125,10 +124,10 @@ export class Bank implements OnInit {
       SwiftCode: x.SwiftCode ?? '',
       ADCode: x.ADCode ?? '',
 
-      IsBeneficiaryBank: (x.IsBeneficiaryBank ?? 0) as Int01,
-      IsAdvisingBank: (x.IsAdvisingBank ?? 0) as Int01,
-      IsNegoBank: (x.IsNegoBank ?? 0) as Int01,
-      IsActive: (x.IsActive ?? 0) as Int01,
+      IsBeneficiaryBank: (x.IsBeneficiaryBank ?? 0) as common2.Int01,
+      IsAdvisingBank: (x.IsAdvisingBank ?? 0) as common2.Int01,
+      IsNegoBank: (x.IsNegoBank ?? 0) as common2.Int01,
+      IsActive: (x.IsActive ?? 0) as common2.Int01,
 
       Approved: !!x.Approved,
       ApprovedBy: x.ApprovedBy ?? 0,
@@ -163,7 +162,7 @@ export class Bank implements OnInit {
       .subscribe(list => this.items = list);
   }
 
-  setStatus(s: Status) {
+  setStatus(s: common2.Status) {
     if (this.status === s) return;
     this.status = s;
     if (this.mode === 'list') this.load();
@@ -312,12 +311,12 @@ export class Bank implements OnInit {
   this.saving = true; this.saveError = ''; this.saveSuccess = '';
   const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
-  this.http.post<ApiSaveResponse>(this.endpointSave, body, { headers })
+  this.http.post<common2.ApiSaveResponse>(this.endpointSave, body, { headers })
     .pipe(finalize(() => this.saving = false))
     .subscribe({
       next: (res) => {
         debugger;
-        
+
         // ✅ Backend contract: success when ResultId > 1
         const resultId = Number(res?.ResultId ?? 0);
         const ok = resultId > 1 || ((res?.NoofRows ?? 0) > 0 && (res?.ErrorNo ?? 0) === 0);

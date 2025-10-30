@@ -6,7 +6,7 @@ import { catchError, finalize, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 type Int01 = 0 | 1;
-type Status = 'ALL' | 'EDIT' | 'APPROVED';
+type Status = 'EDIT' | 'APPROVED';
 
 interface BankRow {
   BankID: number;
@@ -63,7 +63,7 @@ export class Bank implements OnInit {
 
   // UI state
   mode: 'list' | 'create' | 'edit' = 'list';
-  status: Status = 'ALL';
+  status: Status = 'EDIT';
   loading = false;
   saving = false;
   error = '';

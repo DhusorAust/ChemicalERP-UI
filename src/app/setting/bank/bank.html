@@ -5,10 +5,8 @@
     <input class="search" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="load()" />
 
     <div class="pill-group">
-      <button type="button" class="pill" [class.active]="status==='ALL'" (click)="setStatus('ALL')">All</button>
       <button type="button" class="pill" [class.active]="status==='EDIT'" (click)="setStatus('EDIT')">Edit</button>
       <button type="button" class="pill" [class.active]="status==='APPROVED'" (click)="setStatus('APPROVED')">Approved</button>
-      <button type="button" class="pill" (click)="refresh()">Refresh</button>
       <button type="button" class="pill new" (click)="startCreate()">New</button>
     </div>
   </div>

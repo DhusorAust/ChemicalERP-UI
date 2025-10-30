@@ -88,7 +88,7 @@
         <button class="pill submit" type="submit" [disabled]="saving">
           {{ saving ? (mode==='edit' ? 'Updating...' : 'Saving...') : (mode==='edit' ? 'Update' : 'Save') }}
         </button>
-        <button class="pill" type="button" (click)="cancelForm()" [disabled]="saving">Cancel</button>
+        <button class="pill" type="button" (click)="cancelForm()" [disabled]="saving">Back To List</button>
       </div>
     </form>
   </div>

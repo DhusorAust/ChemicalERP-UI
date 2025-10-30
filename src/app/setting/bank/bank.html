@@ -1,140 +1,97 @@
-<!-- path: src/app/bank/bank.html -->
-<div class="bank-wrap">
-  <!-- Header -->
-  <div class="card card-head">
-    <div class="card-header">
-      <h2 class="title">Bank</h2>
-      <div class="head-right">
-        <ng-container *ngIf="mode==='list'; else formHeader">
-          <input class="form-control" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="onSearchEnter()"> 
+<div class="bank-page">
+  <div class="toolbar">
+    <div class="title">Bank</div>
 
-          <button type="button" class="btn btn-outline" (click)="setStatus('EDIT')">Edit</button>
-          <button type="button" class="btn btn-outline" (click)="setStatus('APPROVED')">Approved</button> 
-          <button type="button" class="btn btn-primary" (click)="startCreate()">Add New</button>
-        </ng-container>
+    <input class="search" placeholder="Search bank..." [(ngModel)]="search" (keyup.enter)="load()" />
 
-        <ng-template #formHeader>
-          <button type="button" class="btn btn-outline" (click)="cancelForm()">Back to List</button>
-        </ng-template>
-      </div>
+    <div class="pill-group">
+      <button type="button" class="pill" [class.active]="status==='ALL'" (click)="setStatus('ALL')">All</button>
+      <button type="button" class="pill" [class.active]="status==='EDIT'" (click)="setStatus('EDIT')">Edit</button>
+      <button type="button" class="pill" [class.active]="status==='APPROVED'" (click)="setStatus('APPROVED')">Approved</button>
+      <button type="button" class="pill" (click)="refresh()">Refresh</button>
+      <button type="button" class="pill new" (click)="startCreate()">New</button>
     </div>
   </div>
 
-  <!-- List View -->
-  <div class="card" *ngIf="mode==='list'">
-    <div class="card-body">
-      <div *ngIf="loading" class="alert info">Loading...</div>
-      <div *ngIf="error" class="alert danger">{{ error }}</div>
+  <!-- LIST -->
+  <div class="content-card" *ngIf="mode==='list'">
+    <div class="loading-bar" *ngIf="loading">Loading...</div>
+    <div class="alert error" *ngIf="error">{{ error }}</div>
 
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th (click)="toggleSort('BankID')" style="width:90px;cursor:pointer">
-                ID <span *ngIf="sortField==='BankID'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="toggleSort('BankName')" style="cursor:pointer">
-                BANK NAME <span *ngIf="sortField==='BankName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="toggleSort('BankShortName')" style="cursor:pointer">
-                SHORT <span *ngIf="sortField==='BankShortName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="toggleSort('SwiftCode')" style="cursor:pointer">
-                SWIFT <span *ngIf="sortField==='SwiftCode'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="toggleSort('BankAddress')" style="cursor:pointer">
-                ADDRESS <span *ngIf="sortField==='BankAddress'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="toggleSort('IsActive')" style="width:90px;cursor:pointer">
-                ACTIVE <span *ngIf="sortField==='IsActive'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="toggleSort('Approved')" style="width:110px;cursor:pointer">
-                APPROVED <span *ngIf="sortField==='Approved'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th style="width:80px">ACTIONS</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr *ngFor="let r of items">
-              <td>{{ r.BankID }}</td>
-              <td class="text-strong">{{ r.BankName }}</td>
-              <td>{{ r.BankShortName || '—' }}</td>
-              <td>{{ r.SwiftCode || '—' }}</td>
-              <td>{{ r.BankAddress || '—' }}</td>
-              <td>{{ (r.IsActive ? 1 : 0) ? 'Yes' : 'No' }}</td>
-              <td>{{ (r.Approved ? 1 : 0) ? 'Yes' : 'No' }}</td>
-              <td>
-                <button type="button" class="icon-btn" title="Edit" (click)="startEdit(r)">✏️</button>
-              </td>
-            </tr>
-
-            <tr *ngIf="!items.length && !loading">
-              <td colspan="8" class="empty">NO DATA FOUND</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card-footer">
-        <div class="text-muted">Total: {{ total }}</div>
-      </div>
+    <div class="table-wrap" *ngIf="!loading">
+      <table class="bank-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>BANK NAME</th>
+            <th>SHORT</th>
+            <th>SWIFT</th>
+            <th>ADDRESS</th>
+            <th>ACTIVE</th>
+            <th>APPROVED</th>
+            <th style="width:80px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of items">
+            <td>{{ r.BankID }}</td>
+            <td [class.bold]="!!r.BankName && r.BankName.length>2">{{ r.BankName || '—' }}</td>
+            <td>{{ r.BankShortName || '—' }}</td>
+            <td>{{ r.SwiftCode || '—' }}</td>
+            <td>{{ r.BankAddress || '—' }}</td>
+            <td>{{ r.IsActive===1 ? 'Yes' : 'No' }}</td>
+            <td>{{ r.Approved ? 'Yes' : 'No' }}</td>
+            <td>
+              <button class="pill mini" (click)="startEdit(r)">Edit</button>
+            </td>
+          </tr>
+          <tr *ngIf="!items?.length">
+            <td colspan="8" class="empty">No data found</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="total">Total: {{ items?.length || 0 }}</div>
     </div>
   </div>
 
-  <!-- Create/Edit Form View -->
-  <div class="card" *ngIf="mode==='create' || mode==='edit'">
-    <div class="card-body">
-      <div *ngIf="saveSuccess" class="alert info">{{ saveSuccess }}</div>
-      <div *ngIf="saveError" class="alert danger">{{ saveError }}</div>
+  <!-- FORM -->
+  <div class="content-card" *ngIf="mode!=='list'">
+    <div class="form-head">{{ mode==='create' ? 'New Bank' : 'Edit Bank' }}</div>
 
-      <form (ngSubmit)="submit()" #f="ngForm" novalidate>
-        <div class="form-grid">
-          <label *ngIf="mode==='edit'">
-            <div>Bank ID</div>
-            <input class="form-control" [value]="newBank?.BankID" disabled>
-          </label>
+    <div class="alert error" *ngIf="saveError">{{ saveError }}</div>
+    <div class="alert ok" *ngIf="saveSuccess">{{ saveSuccess }}</div>
 
-          <label [class.col-span-2]="mode==='create'">
-            <div>Bank Name <span class="req">*</span></div>
-            <input class="form-control" name="BankName" [(ngModel)]="newBank!.BankName" required>
-          </label>
+    <form class="form-grid" (ngSubmit)="submit()" autocomplete="off" novalidate>
+      <label>Bank Name
+        <input class="in" [(ngModel)]="form.BankName" name="BankName" required />
+      </label>
+      <label>Bank Code
+        <input class="in" [(ngModel)]="form.BankCode" name="BankCode" />
+      </label>
+      <label>Short Name
+        <input class="in" [(ngModel)]="form.BankShortName" name="BankShortName" />
+      </label>
+      <label>Swift Code
+        <input class="in" [(ngModel)]="form.SwiftCode" name="SwiftCode" />
+      </label>
+      <label class="span2">Address
+        <input class="in" [(ngModel)]="form.BankAddress" name="BankAddress" />
+      </label>
 
-          <label>
-            <div>Short Name</div>
-            <input class="form-control" name="BankShortName" [(ngModel)]="newBank!.BankShortName">
-          </label>
+      <div class="checks span2">
+        <label><input type="checkbox" [(ngModel)]="form.IsActiveBool" name="IsActiveBool" /> Active</label>
+        <label><input type="checkbox" [(ngModel)]="form.IsBeneficiaryBankBool" name="IsBeneficiaryBankBool" /> Beneficiary</label>
+        <label><input type="checkbox" [(ngModel)]="form.IsAdvisingBankBool" name="IsAdvisingBankBool" /> Advising</label>
+        <label><input type="checkbox" [(ngModel)]="form.IsNegoBankBool" name="IsNegoBankBool" /> Negotiating</label>
+        <label><input type="checkbox" [(ngModel)]="form.Approved" name="Approved" /> Approved</label>
+      </div>
 
-          <label>
-            <div>SWIFT Code</div>
-            <input class="form-control" name="SwiftCode" [(ngModel)]="newBank!.SwiftCode">
-          </label>
-
-          <label class="col-span-2">
-            <div>Address</div>
-            <input class="form-control" name="BankAddress" [(ngModel)]="newBank!.BankAddress">
-          </label>
-
-          <label class="check">
-            <input type="checkbox" [(ngModel)]="newBank!.IsActive" name="IsActive">
-            <span>Active</span>
-          </label>
-
-          <label class="check">
-            <input type="checkbox" [(ngModel)]="newBank!.Approved" name="Approved">
-            <span>Approved</span>
-          </label>
-        </div>
-
-        <div class="card-footer">
-          <div class="btn-group">
-            <button type="button" class="btn" (click)="cancelForm()" [disabled]="saving">Cancel</button>
-            <button type="submit" class="btn btn-primary" [disabled]="saving || !f.form.valid">
-              {{ saving ? (mode==='edit' ? 'Updating...' : 'Saving...') : (mode==='edit' ? 'Update' : 'Save') }}
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
+      <div class="form-actions span2">
+        <button class="pill submit" type="submit" [disabled]="saving">
+          {{ saving ? (mode==='edit' ? 'Updating...' : 'Saving...') : (mode==='edit' ? 'Update' : 'Save') }}
+        </button>
+        <button class="pill" type="button" (click)="cancelForm()" [disabled]="saving">Cancel</button>
+      </div>
+    </form>
   </div>
 </div>

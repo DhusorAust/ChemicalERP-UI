@@ -6,7 +6,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 
-import type * as common2 from '../../common';
+import type * as common from '../../common';
 
 import { environment } from '../../environments/environment';
 
@@ -21,10 +21,10 @@ interface BankRow {
   SwiftCode: string;
   ADCode: string;
 
-  IsBeneficiaryBank: common2.Int01;
-  IsAdvisingBank: common2.Int01;
-  IsNegoBank: common2.Int01;
-  IsActive: common2.Int01;
+  IsBeneficiaryBank: common.Int01;
+  IsAdvisingBank: common.Int01;
+  IsNegoBank: common.Int01;
+  IsActive: common.Int01;
 
   Approved: boolean;
   ApprovedBy: number;
@@ -64,12 +64,12 @@ export class Bank implements OnInit {
   // API
  
   apiBase = environment.apiBase; 
-  endpointList = (s: common2.Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
+  endpointList = (s: common.Status) => `${this.apiBase}/api/Setting/getBankList/${s}`;
   endpointSave = `${this.apiBase}/api/Setting/saveBank`;
 
   // UI state
   mode: 'list' | 'create' | 'edit' = 'list';
-  status: common2.Status = 'EDIT';
+  status: common.Status = 'EDIT';
   loading = false;
   saving = false;
   error = '';
@@ -109,7 +109,7 @@ export class Bank implements OnInit {
       ApprovedDate: ''
     };
   }
-  private toInt01(v: any): common2.Int01 {
+  private toInt01(v: any): common.Int01 {
     return (v === true || v === 1 || String(v).toLowerCase() === 'true') ? 1 : 0;
   }
   private isoNow(): string { return new Date().toISOString(); }
@@ -124,10 +124,10 @@ export class Bank implements OnInit {
       SwiftCode: x.SwiftCode ?? '',
       ADCode: x.ADCode ?? '',
 
-      IsBeneficiaryBank: (x.IsBeneficiaryBank ?? 0) as common2.Int01,
-      IsAdvisingBank: (x.IsAdvisingBank ?? 0) as common2.Int01,
-      IsNegoBank: (x.IsNegoBank ?? 0) as common2.Int01,
-      IsActive: (x.IsActive ?? 0) as common2.Int01,
+      IsBeneficiaryBank: (x.IsBeneficiaryBank ?? 0) as common.Int01,
+      IsAdvisingBank: (x.IsAdvisingBank ?? 0) as common.Int01,
+      IsNegoBank: (x.IsNegoBank ?? 0) as common.Int01,
+      IsActive: (x.IsActive ?? 0) as common.Int01,
 
       Approved: !!x.Approved,
       ApprovedBy: x.ApprovedBy ?? 0,
@@ -162,7 +162,7 @@ export class Bank implements OnInit {
       .subscribe(list => this.items = list);
   }
 
-  setStatus(s: common2.Status) {
+  setStatus(s: common.Status) {
     if (this.status === s) return;
     this.status = s;
     if (this.mode === 'list') this.load();
@@ -311,7 +311,7 @@ export class Bank implements OnInit {
   this.saving = true; this.saveError = ''; this.saveSuccess = '';
   const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
-  this.http.post<common2.ApiSaveResponse>(this.endpointSave, body, { headers })
+  this.http.post<common.ApiSaveResponse>(this.endpointSave, body, { headers })
     .pipe(finalize(() => this.saving = false))
     .subscribe({
       next: (res) => {

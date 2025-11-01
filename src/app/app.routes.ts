@@ -15,16 +15,31 @@ import { Bank } from './setting/bank/bank';
 
 
 // src/app/app.routes.ts
+// import { Routes } from '@angular/router';
+
+// export const routes: Routes = [
+//   { path: '', pathMatch: 'full', redirectTo: 'setting/bank' },
+//   {
+//     path: 'setting/bank',
+//     loadComponent: () => import('./setting/bank/bank').then(m => m.Bank) // matches "export class Bank"
+//   },
+//   // TEMP aliases (catch old /Bank links)
+//   { path: 'Bank', pathMatch: 'full', redirectTo: 'setting/bank' },
+//   { path: 'Setting/Bank', pathMatch: 'full', redirectTo: 'setting/bank' },
+//   { path: '**', redirectTo: 'setting/bank' }
+// ];
+
+
+
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'setting/bank' },
+  { path: '', pathMatch: 'full', redirectTo: 'store/chemicalStore/requisition' },
   {
-    path: 'setting/bank',
-    loadComponent: () => import('./setting/bank/bank').then(m => m.Bank) // matches "export class Bank"
+    path: 'store/chemicalStore/requisition',
+    loadComponent: () =>
+      import('./store/chemicalStore/requisition/requisition')
+        .then(m => m.RequisitionComponent)   // <-- class name from requisition.ts
   },
-  // TEMP aliases (catch old /Bank links)
-  { path: 'Bank', pathMatch: 'full', redirectTo: 'setting/bank' },
-  { path: 'Setting/Bank', pathMatch: 'full', redirectTo: 'setting/bank' },
-  { path: '**', redirectTo: 'setting/bank' }
+  { path: '**', redirectTo: 'store/chemicalStore/requisition' }
 ];

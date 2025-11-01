@@ -1,0 +1,173 @@
+<!-- app/store/chemicalStore/requisition/requisition.component.html -->
+<div class="req-page">
+  <h2>Store • Chemical Store • REQUISITION</h2>
+
+  <div class="alert error" *ngIf="error">{{error}}</div>
+  <div class="alert error" *ngIf="saveError">{{saveError}}</div>
+  <div class="alert success" *ngIf="saveSuccess">{{saveSuccess}}</div>
+
+  <!-- General Information -->
+  <fieldset class="card">
+    <legend>General Information</legend>
+
+    <div class="grid g-3">
+      <div class="col-4">
+        <label>Project</label>
+        <select [(ngModel)]="header.ProjectId" name="ProjectId">
+          <option [ngValue]="0">-- Select --</option>
+          <option *ngFor="let p of projects" [ngValue]="p.id">{{p.name}}</option>
+        </select>
+      </div>
+
+      <div class="col-4">
+        <label>Store</label>
+        <select [(ngModel)]="header.StoreId" name="StoreId" (ngModelChange)="onStoreChanged()">
+          <option [ngValue]="0">-- Select --</option>
+          <option *ngFor="let s of stores" [ngValue]="s.id">{{s.name}}</option>
+        </select>
+      </div>
+
+      <div class="col-4">
+        <label>Requisition No</label>
+        <input [value]="header.ReqNo" readonly />
+      </div>
+
+      <div class="col-4">
+        <label>Requisition Date</label>
+        <input type="date" [(ngModel)]="header.ReqDate" name="ReqDate" />
+      </div>
+
+      <div class="col-4">
+        <label>Requisition By</label>
+        <select [(ngModel)]="header.RequisitionById" name="RequisitionById">
+          <option [ngValue]="0">-- Select --</option>
+          <option *ngFor="let u of persons" [ngValue]="u.id">{{u.name}}</option>
+        </select>
+      </div>
+
+      <div class="col-4">
+        <label>Concern Person</label>
+        <select [(ngModel)]="header.ConcernPersonId" name="ConcernPersonId">
+          <option [ngValue]="0">Select or Type...</option>
+          <option *ngFor="let u of persons" [ngValue]="u.id">{{u.name}}</option>
+        </select>
+      </div>
+
+      <div class="col-12">
+        <label>Remarks</label>
+        <textarea rows="2" [(ngModel)]="header.Remarks" name="Remarks"></textarea>
+      </div>
+
+      <div class="col-12">
+        <label>Revise Reason</label>
+        <textarea rows="2" [(ngModel)]="header.ReviseReason" name="ReviseReason"></textarea>
+      </div>
+
+      <div class="col-12">
+        <label>Reject Reason</label>
+        <textarea rows="2" [(ngModel)]="header.RejectReason" name="RejectReason"></textarea>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- Details Information -->
+  <fieldset class="card">
+    <legend>Details Information</legend>
+
+    <table class="grid">
+      <thead>
+        <tr>
+          <th style="width:64px;">Action</th>
+          <th>Chemical Items</th>
+          <th style="width:120px;">UOM</th>
+          <th style="width:120px;">Stock Qty</th>
+          <th style="width:120px;">Qty</th>
+          <th style="width:220px;">Section</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rows; let i = index; trackBy: trackByIndex">
+          <td class="actions">
+            <button type="button" (click)="removeRow(i)" title="Delete">🗑️</button>
+          </td>
+
+          <!-- Chemical Items: API on open + virtualized list -->
+          <td class="chem-cell">
+            <div class="chem-dd" [class.open]="chemOpenIndex===i">
+              <button type="button" class="select-btn" (click)="openChemDropdown(i)">
+                {{ r.ChemicalName || 'Select' }}
+                <span class="caret">▾</span>
+              </button>
+
+              <div class="panel" *ngIf="chemOpenIndex===i" (keydown.escape)="closeChemDropdown()">
+                <div class="panel-head">
+                  <input type="text" placeholder="Search..."
+                         [(ngModel)]="chemQuery"
+                         (ngModelChange)="onChemSearchInput()" />
+                  <button type="button" class="close" (click)="closeChemDropdown()">✕</button>
+                </div>
+
+                <cdk-virtual-scroll-viewport class="vlist" itemSize="36"
+                                              (scrolledIndexChange)="onChemScrolled($event)">
+                  <div *cdkVirtualFor="let c of chemList" class="item"
+                       (click)="chooseChemical(r, c)">
+                    {{ c.name }} <small *ngIf="c.uomName">• {{ c.uomName }}</small>
+                  </div>
+                </cdk-virtual-scroll-viewport>
+
+                <div class="panel-foot">
+                  <span *ngIf="chemLoading">Loading…</span>
+                  <span *ngIf="!chemLoading && !chemList.length">No data</span>
+                  <span *ngIf="!chemLoading && chemList.length && !chemHasMore">End of list</span>
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <!-- UOM -->
+          <td>
+            <select [(ngModel)]="r.UomId" name="Uom{{i}}">
+              <option [ngValue]="0">--</option>
+              <option *ngFor="let u of uoms" [ngValue]="u.id">{{u.name}}</option>
+            </select>
+          </td>
+
+          <td><input type="number" [(ngModel)]="r.StockQty" name="Stock{{i}}" readonly /></td>
+          <td><input type="number" [(ngModel)]="r.Qty" name="Qty{{i}}" (blur)="onQtyBlur()" /></td>
+
+          <td>
+            <select [(ngModel)]="r.SectionId" name="Sec{{i}}">
+              <option [ngValue]="0">--</option>
+              <option *ngFor="let s of sections" [ngValue]="s.id">{{s.name}}</option>
+            </select>
+          </td>
+
+          <td><textarea rows="1" [(ngModel)]="r.Remarks" name="Rem{{i}}"></textarea></td>
+        </tr>
+
+        <tr>
+          <td colspan="7">
+            <button type="button" class="link" (click)="addRow()">+ Add New</button>
+          </td>
+        </tr>
+
+        <tr class="total-row" *ngIf="rows?.length">
+          <td></td>
+          <td colspan="3"></td>
+          <td class="total">{{ totalQty | number:'1.2-2' }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tbody>
+    </table>
+  </fieldset>
+
+  <!-- Footer actions -->
+  <div class="footer-actions">
+    <button type="button" class="print" (click)="print()">🖶 Print Requisition</button>
+    <span class="spacer"></span>
+    <button type="button" (click)="backToList()">Back to List</button>
+    <button type="button" class="secondary" [disabled]="saving" (click)="submit(false)">Save</button>
+    <button type="button" class="primary"   [disabled]="saving" (click)="submit(true)">Save & Approved</button>
+  </div>
+</div>

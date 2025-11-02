@@ -1,10 +1,10 @@
-<!-- app/store/chemicalStore/requisition/requisition.component.html -->
+<!-- file: app/store/chemicalStore/requisition/requisition.component.html -->
 <div class="req-page">
   <h2>Store • Chemical Store • REQUISITION</h2>
 
-  <div class="alert error" *ngIf="error">{{error}}</div>
-  <div class="alert error" *ngIf="saveError">{{saveError}}</div>
-  <div class="alert success" *ngIf="saveSuccess">{{saveSuccess}}</div>
+  <div class="alert error" *ngIf="error">{{ error }}</div>
+  <div class="alert error" *ngIf="saveError">{{ saveError }}</div>
+  <div class="alert success" *ngIf="saveSuccess">{{ saveSuccess }}</div>
 
   <!-- General Information -->
   <fieldset class="card">
@@ -15,7 +15,7 @@
         <label>Project</label>
         <select [(ngModel)]="header.ProjectId" name="ProjectId">
           <option [ngValue]="0">-- Select --</option>
-          <option *ngFor="let p of projects" [ngValue]="p.id">{{p.name}}</option>
+          <option *ngFor="let p of projects" [ngValue]="p.id">{{ p.text }}</option>
         </select>
       </div>
 
@@ -23,7 +23,7 @@
         <label>Store</label>
         <select [(ngModel)]="header.StoreId" name="StoreId" (ngModelChange)="onStoreChanged()">
           <option [ngValue]="0">-- Select --</option>
-          <option *ngFor="let s of stores" [ngValue]="s.id">{{s.name}}</option>
+          <option *ngFor="let s of stores" [ngValue]="s.id">{{ s.text }}</option>
         </select>
       </div>
 
@@ -41,7 +41,7 @@
         <label>Requisition By</label>
         <select [(ngModel)]="header.RequisitionById" name="RequisitionById">
           <option [ngValue]="0">-- Select --</option>
-          <option *ngFor="let u of persons" [ngValue]="u.id">{{u.name}}</option>
+          <option *ngFor="let u of persons" [ngValue]="u.id">{{ u.text }}</option>
         </select>
       </div>
 
@@ -49,7 +49,7 @@
         <label>Concern Person</label>
         <select [(ngModel)]="header.ConcernPersonId" name="ConcernPersonId">
           <option [ngValue]="0">Select or Type...</option>
-          <option *ngFor="let u of persons" [ngValue]="u.id">{{u.name}}</option>
+          <option *ngFor="let u of persons" [ngValue]="u.id">{{ u.text }}</option>
         </select>
       </div>
 
@@ -94,25 +94,34 @@
 
           <!-- Chemical Items: API on open + virtualized list -->
           <td class="chem-cell">
-            <div class="chem-dd" [class.open]="chemOpenIndex===i">
+            <div class="chem-dd" [class.open]="chemOpenIndex === i">
               <button type="button" class="select-btn" (click)="openChemDropdown(i)">
                 {{ r.ChemicalName || 'Select' }}
                 <span class="caret">▾</span>
               </button>
 
-              <div class="panel" *ngIf="chemOpenIndex===i" (keydown.escape)="closeChemDropdown()">
+              <div class="panel" *ngIf="chemOpenIndex === i" (keydown.escape)="closeChemDropdown()">
                 <div class="panel-head">
-                  <input type="text" placeholder="Search..."
-                         [(ngModel)]="chemQuery"
-                         (ngModelChange)="onChemSearchInput()" />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    [(ngModel)]="chemQuery"
+                    (ngModelChange)="onChemSearchInput()"
+                  />
                   <button type="button" class="close" (click)="closeChemDropdown()">✕</button>
                 </div>
 
-                <cdk-virtual-scroll-viewport class="vlist" itemSize="36"
-                                              (scrolledIndexChange)="onChemScrolled($event)">
-                  <div *cdkVirtualFor="let c of chemList" class="item"
-                       (click)="chooseChemical(r, c)">
-                    {{ c.name }} <small *ngIf="c.uomName">• {{ c.uomName }}</small>
+                <cdk-virtual-scroll-viewport
+                  class="vlist"
+                  itemSize="36"
+                  (scrolledIndexChange)="onChemScrolled($event)"
+                >
+                  <div
+                    *cdkVirtualFor="let c of chemList"
+                    class="item"
+                    (click)="chooseChemical(r, c)"
+                  >
+                    {{ c.text }}
                   </div>
                 </cdk-virtual-scroll-viewport>
 
@@ -127,23 +136,29 @@
 
           <!-- UOM -->
           <td>
-            <select [(ngModel)]="r.UomId" name="Uom{{i}}">
+            <select [(ngModel)]="r.UomId" name="Uom{{ i }}">
               <option [ngValue]="0">--</option>
-              <option *ngFor="let u of uoms" [ngValue]="u.id">{{u.name}}</option>
+              <option *ngFor="let u of uoms" [ngValue]="u.id">{{ u.text }}</option>
             </select>
           </td>
-
-          <td><input type="number" [(ngModel)]="r.StockQty" name="Stock{{i}}" readonly /></td>
-          <td><input type="number" [(ngModel)]="r.Qty" name="Qty{{i}}" (blur)="onQtyBlur()" /></td>
 
           <td>
-            <select [(ngModel)]="r.SectionId" name="Sec{{i}}">
+            <input type="number" [(ngModel)]="r.StockQty" name="Stock{{ i }}" readonly />
+          </td>
+          <td>
+            <input type="number" [(ngModel)]="r.Qty" name="Qty{{ i }}" (blur)="onQtyBlur()" />
+          </td>
+
+          <td>
+            <select [(ngModel)]="r.SectionId" name="Sec{{ i }}">
               <option [ngValue]="0">--</option>
-              <option *ngFor="let s of sections" [ngValue]="s.id">{{s.name}}</option>
+              <option *ngFor="let s of sections" [ngValue]="s.id">{{ s.text }}</option>
             </select>
           </td>
 
-          <td><textarea rows="1" [(ngModel)]="r.Remarks" name="Rem{{i}}"></textarea></td>
+          <td>
+            <textarea rows="1" [(ngModel)]="r.Remarks" name="Rem{{ i }}"></textarea>
+          </td>
         </tr>
 
         <tr>
@@ -155,7 +170,7 @@
         <tr class="total-row" *ngIf="rows?.length">
           <td></td>
           <td colspan="3"></td>
-          <td class="total">{{ totalQty | number:'1.2-2' }}</td>
+          <td class="total">{{ totalQty | number: '1.2-2' }}</td>
           <td colspan="2"></td>
         </tr>
       </tbody>
@@ -168,6 +183,6 @@
     <span class="spacer"></span>
     <button type="button" (click)="backToList()">Back to List</button>
     <button type="button" class="secondary" [disabled]="saving" (click)="submit(false)">Save</button>
-    <button type="button" class="primary"   [disabled]="saving" (click)="submit(true)">Save & Approved</button>
+    <button type="button" class="primary" [disabled]="saving" (click)="submit(true)">Save & Approved</button>
   </div>
 </div>

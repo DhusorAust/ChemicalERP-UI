@@ -4,7 +4,7 @@ import { NgIf } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-
+import { environment } from '../environments/environment';
 
 
 @Component({
@@ -38,7 +38,10 @@ submit() {
   const p = encodeURIComponent(this.form.value.PasswordH!);
 
   // DIRECT call to your API (no proxy):
-  const url = `http://localhost:56172/api/login/getloginuser/${u}/${p}`;
+
+  var apiBase = environment.apiBase;
+
+  const url = `${apiBase}/api/login/getloginuser/${u}/${p}`; 
 
   this.http.get<any>(url, { withCredentials: true }).subscribe({
     next: async (res) => {

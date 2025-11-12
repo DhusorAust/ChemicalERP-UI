@@ -2,6 +2,7 @@ import { Component, ViewEncapsulation, inject, signal, PLATFORM_ID } from '@angu
 import { CommonModule, NgIf, NgFor, isPlatformBrowser } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../environments/environment';
 
 /*** API row shape (tolerant to naming) ***/
 interface MenuRow {
@@ -59,11 +60,12 @@ export class Home {
       this.router.navigateByUrl('/login', { replaceUrl: true });
       return;
     }
+    
+    const url = `${environment.apiBase}/api/login/GetMenuLoad`; 
 
     // API থেকে মেনু আনুন
     this.http
-      .get<MenuRow[]>('http://localhost:56172/api/login/GetMenuLoad', { withCredentials: true })
-      .subscribe({
+    this.http.get<MenuRow[]>(url, { withCredentials: true }).subscribe({
         next: rows => {
           const list = Array.isArray(rows) ? rows : [];
           const tree = rowsToTree_likeMenuHelper(list);
